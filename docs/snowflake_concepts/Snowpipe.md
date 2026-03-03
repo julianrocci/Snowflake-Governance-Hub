@@ -1,0 +1,1 @@
+snowpipe streaming vs snowpipe auto ingest
