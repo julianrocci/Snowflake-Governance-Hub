@@ -1,0 +1,1 @@
+Only data is shared so no stages, file formats, tasks/streams, procedures can be shared.
