@@ -70,11 +70,10 @@ To maintain focus and realism, the following topics are intentionally excluded f
 Automated cost optimization or self-healing systems
 Machine learning–based cost prediction
 Cloud provider–level billing reconciliation
-Real-time alerting and enforcement mechanisms
 
 8. Learning Objectives
 
-Beyond the functional goals, this project also serves as a structured learning exercise to deepen understanding of:
+Beyond the functional goals, this project also serves as a structured learning exercise to deepen myunderstanding of:
 
 Snowflake cost and billing mechanisms
 Warehouse sizing and workload management
