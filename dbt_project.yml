@@ -1,0 +1,44 @@
+# dbt_project.yml
+name: 'csot_governance'
+version: '1.0.0'
+config-version: 2
+
+# Connection to the profile defined above
+profile: 'cost_governance_profile'
+
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Global configurations for models
+models:
+  csot_governance:
+    # Layer 1: Raw data cleaning
+    staging:
+      +database: GOVERNANCE_DB
+      +schema: staging
+      +materialized: view
+    
+    # Layer 2: Business logic & KPIs calculation
+    intermediate:
+      +database: GOVERNANCE_DB
+      +schema: intermediate
+      +materialized: ephemeral
+    
+    # Layer 3: Final reporting gold tables
+    marts:
+      +database: GOVERNANCE_DB
+      +materialized: table
+      cost:
+        +schema: mart_cost
+      performance:
+        +schema: mart_performance
+      governance:
+        +schema: mart_governance
