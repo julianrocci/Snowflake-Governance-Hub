@@ -4,6 +4,8 @@
 
 with source as (
     select * from {{ source('snowflake_usage', 'query_history') }}
+    where warehouse_name is not null    -- Serverless excluded
+      and start_time >= dateadd(day, -30, current_timestamp())
 ),
 
 raw_query_history as (
@@ -16,20 +18,23 @@ raw_query_history as (
         user_name,
         role_name,
         execution_status,
+        query_tag,
         
-        -- Timing conversion (ms to seconds)
-        execution_time / 1000 as execution_time_s,
-        compilation_time / 1000 as compilation_time_s,
-        queued_overload_time / 1000 as queued_overload_time_s,
+        -- Timing and duration
+        start_time,
+        end_time,
+        datediff('second', start_time, end_time) as execution_time_seconds,
         
-        -- Data volume (bytes to GB)
+        -- Performance metrics
+        rows_produced,
         (bytes_scanned / power(1024, 3)) as gb_scanned,
         (bytes_spilled_to_local_storage / power(1024, 3)) as gb_spilled_local,
         (bytes_spilled_to_remote_storage / power(1024, 3)) as gb_spilled_remote,
         
-        start_time,
-        end_time
+        -- More ms columns for deep analysis if needed
+        compilation_time / 1000 as compilation_time_s,
+        queued_overload_time / 1000 as queued_overload_time_s
+        
     from source
 )
-
 select * from raw_query_history
