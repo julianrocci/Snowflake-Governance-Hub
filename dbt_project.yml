@@ -1,5 +1,5 @@
 # dbt_project.yml
-name: 'csot_governance'
+name: 'cost_governance'
 version: '1.0.0'
 config-version: 2
 
@@ -19,22 +19,20 @@ clean-targets:
 
 # Global configurations for models
 models:
-  csot_governance:
+  cost_governance:
+    # No +database as dbt will use it from profiles.yml file
     # Layer 1: Raw data cleaning
     staging:
-      +database: GOVERNANCE_DB
       +schema: staging
       +materialized: view
     
     # Layer 2: Business logic & KPIs calculation
     intermediate:
-      +database: GOVERNANCE_DB
       +schema: intermediate
       +materialized: ephemeral
     
     # Layer 3: Final reporting gold tables
     marts:
-      +database: GOVERNANCE_DB
       +materialized: table
       cost:
         +schema: mart_cost
