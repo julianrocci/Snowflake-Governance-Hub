@@ -36,15 +36,15 @@ final_calculations AS (
 
 SELECT 
     *,
-    -- Filter by Environnement
+    -- By Environment
     CASE 
         WHEN warehouse_name LIKE '%_PROD' OR warehouse_name LIKE 'PROD_%' THEN 'PROD'
-        WHEN warehouse_name LIKE '%_DEV' OR warehouse_name LIKE 'DEV_%' THEN 'DEV'
-        WHEN warehouse_name LIKE '%_STG' OR warehouse_name LIKE 'STG_%' THEN 'STAGING'
+        WHEN warehouse_name LIKE '%_UAT'  OR warehouse_name LIKE 'UAT_%'  THEN 'UAT'
+        WHEN warehouse_name LIKE '%_DEV'  OR warehouse_name LIKE 'DEV_%'  THEN 'DEV'
         ELSE 'OTHER'
     END AS environment,
 
-    -- Filter by Workload Type
+    -- By Workload type
     CASE 
         WHEN warehouse_name LIKE '%_LOAD_%' OR warehouse_name LIKE '%_INGEST_%' THEN 'DATA_INGESTION'
         WHEN warehouse_name LIKE '%_TRANSFORM_%' OR warehouse_name LIKE '%_DBT_%' THEN 'TRANSFORMATION'
@@ -52,7 +52,7 @@ SELECT
         ELSE 'GENERAL_PURPOSE'
     END AS warehouse_type,
 
-    -- Filter by Domain
+    -- By Business domain
     CASE 
         WHEN warehouse_name LIKE '%FIN_%' THEN 'FINANCE'
         WHEN warehouse_name LIKE '%MKT_%' THEN 'MARKETING'
