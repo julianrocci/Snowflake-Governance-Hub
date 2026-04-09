@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  # Main Efficiency Mart
+  - name: fct_warehouse_efficiency
+    description: "Final mart for warehouse efficiency and FinOps ROI. Provides a high-level view of wasted costs per warehouse."
+    columns:
+      - name: warehouse_name
+        description: "The primary key: name of the Snowflake warehouse."
+        tests:
+          - unique
+          - not_null
+
+      - name: environment
+        description: "Classification of the warehouse environment (PROD, UAT, DEV)."
+        tests:
+          - accepted_values:
+              values: ['PROD', 'UAT', 'DEV']
+          - not_null
+
+      - name: efficiency_percentage
+        description: "Percentage of time the warehouse was actually executing queries vs being idle."
+        tests:
+          - not_null
+
+  # Detailed Behavior Mart
+  - name: fct_warehouse_behavior_analysis
+    description: "Detailed mart for behavioral analysis. Tracks wakeups and isolated queries by user and date."
+    columns:
+      - name: warehouse_name
+        description: "Name of the warehouse where queries were executed."
+        tests:
+          - not_null
+
+      - name: execution_date
+        description: "The date of the query execution for trend analysis."
+        tests:
+          - not_null
