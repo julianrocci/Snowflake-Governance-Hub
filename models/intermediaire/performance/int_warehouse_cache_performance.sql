@@ -20,7 +20,7 @@ WITH query_source AS (
         (bytes_scanned_from_local_storage + bytes_scanned_from_remote_storage) AS total_bytes_scanned
     FROM {{ ref('stg_snowflake_query_history') }}
     WHERE start_time >= DATEADD('day', -30, CURRENT_TIMESTAMP())
-      AND warehouse_size IS NOT NULL -- Focus on compute queries
+      AND warehouse_size IS NOT NULL
 ),
 
 cache_calculations AS (
