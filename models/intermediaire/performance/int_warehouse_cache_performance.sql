@@ -1,43 +1,51 @@
-/* Intermediate: Caching Performance Metrics.
-   Calculates hit ratios for Result Cache and Local Disk Cache. */
-
+/* Intermediate model to flag query performance based on cache usage.
+   Logic:
+   - Result Cache: 100% match.
+   - Local Disk: > 50% of total bytes scanned.
+   - Remote Disk: > 50% of total bytes scanned.
+*/
 {{ config(
     materialized='ephemeral'
 ) }}
 
-WITH query_source AS (
+WITH base_metrics AS (
     SELECT
         query_id,
         warehouse_name,
         start_time,
-        total_elapsed_time,
-        -- Result Cache
-        percentage_scanned_from_cache AS result_cache_hit_percentage,
-        
-        -- Data volumes
+        percentage_scanned_from_cache,
         bytes_scanned_from_local_storage AS bytes_local,
         bytes_scanned_from_remote_storage AS bytes_remote,
-        (bytes_scanned_from_local_storage + bytes_scanned_from_remote_storage) AS total_bytes_scanned
+        (bytes_scanned_from_local_storage + bytes_scanned_from_remote_storage) AS total_bytes
     FROM {{ ref('stg_snowflake_query_history') }}
     WHERE start_time >= DATEADD('day', -30, CURRENT_TIMESTAMP())
+      -- Exclude Cloud Services only queries (Metadata only queries)
       AND warehouse_size IS NOT NULL
 ),
 
-cache_calculations AS (
+flagged_queries AS (
     SELECT
         *,
-        -- Local Disk Cache Ratio: Avoiding division by zero
+        -- Result Cache: Full match in Snowflake Service Layer
         CASE 
-            WHEN total_bytes_scanned = 0 THEN 0
-            ELSE (bytes_local / total_bytes_scanned)
-        END AS local_disk_cache_ratio,
+            WHEN percentage_scanned_from_cache = 1 THEN 1 
+            ELSE 0 
+        END AS is_result_cache_hit,
         
-        -- Remote Scan Ratio
+        -- Local Disk Efficiency: > 50% data from SSD
         CASE 
-            WHEN total_bytes_scanned = 0 THEN 0
-            ELSE (bytes_remote / total_bytes_scanned)
-        END AS remote_disk_scan_ratio
-    FROM query_source
+            WHEN percentage_scanned_from_cache < 1 
+                 AND (bytes_local / NULLIF(total_bytes, 0)) > 0.5 
+            THEN 1 ELSE 0 
+        END AS is_local_efficient,
+        
+        -- Remote Disk Heavy: > 50% data from Cloud Storage (S3/Azure)
+        CASE 
+            WHEN percentage_scanned_from_cache < 1 
+                 AND (bytes_remote / NULLIF(total_bytes, 0)) >= 0.5 
+            THEN 1 ELSE 0 
+        END AS is_remote_heavy
+    FROM base_metrics
 )
 
-SELECT * FROM cache_calculations
+SELECT * FROM flagged_queries
