@@ -3,13 +3,10 @@ cost_governance_profile:
   outputs:
     dev:
       type: snowflake
-      account: "{{ env_var('SNOWFLAKE_ACCOUNT') }}"
-      user: "{{ env_var('SNOWFLAKE_USER') }}"
-      # Use Key-Pair authentication for expert-level security or password for basics
-      password: "{{ env_var('SNOWFLAKE_PASSWORD') }}"
-      role: "{{ env_var('SNOWFLAKE_ROLE', 'SYSADMIN') }}"
+      account: sq73917
+      user: JULIANROCCI
+      role: ACCOUNTADMIN
       database: GOVERNANCE_DB
-      warehouse: "{{ env_var('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH') }}"
+      warehouse: COMPUTE_WH
       schema: main
       threads: 4
-      client_session_keep_alive: False

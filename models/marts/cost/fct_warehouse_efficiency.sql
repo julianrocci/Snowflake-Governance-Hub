@@ -20,9 +20,11 @@ final_calculations AS (
         total_queries_executed,
         
         -- Efficiency Ratio: (Real Work / Billed Time)
-        ROUND(
-            (total_work_seconds / NULLIF(total_billed_seconds, 0)) * 100, 
-            2
+        COALESCE(
+            ROUND(
+                (total_work_seconds / NULLIF(total_billed_seconds, 0)) * 100, 
+                2
+            ), 0
         ) AS efficiency_percentage,
         
         -- Idle Cost
@@ -41,7 +43,7 @@ SELECT
         WHEN warehouse_name LIKE '%_PROD' OR warehouse_name LIKE 'PROD_%' THEN 'PROD'
         WHEN warehouse_name LIKE '%_UAT'  OR warehouse_name LIKE 'UAT_%'  THEN 'UAT'
         WHEN warehouse_name LIKE '%_DEV'  OR warehouse_name LIKE 'DEV_%'  THEN 'DEV'
-        ELSE 'OTHER'
+        ELSE 'DEV'
     END AS environment,
 
     -- By Workload type
