@@ -1,50 +1,65 @@
-# Used as environment variable for DCM
-manifest_version: 1
+manifest_version: 2
 type: DCM_PROJECT
-
-default_target: dev
+default_target: 'DEV'
 
 targets:
-  # DCM target is stored in a dedicated Management DB
-  dev:
-    account_identifier: <your_account_locator>
-    project_name: MGMT_DB_DEV.DCM.COST_GOV_PROJECT_DEV
-    project_owner: DCM_ADMIN
-    templating_config: dev
-
-  prod:
-    account_identifier: <your_account_locator>
-    project_name: MGMT_DB_PROD.DCM.COST_GOV_PROJECT_PROD
-    project_owner: DCM_ADMIN
-    templating_config: prod
+  DEV:
+    account_identifier: sq73917
+    project_name: 'MGMT_DB_DEV.DCM.COST_GOVERNANCE_DCM_DEV'
+    project_owner: DCM_DEPLOYER
+    templating_config: 'DEV'
+  UAT:
+    account_identifier: sq73917
+    project_name: 'MGMT_DB_UAT.DCM.COST_GOVERNANCE_DCM_UAT'
+    project_owner: DCM_DEPLOYER
+    templating_config: 'UAT'
+  PROD:
+    account_identifier: sq73917
+    project_name: 'MGMT_DB.DCM.COST_GOVERNANCE_DCM_PROD'
+    project_owner: DCM_DEPLOYER
+    templating_config: 'PROD'
 
 templating:
   defaults:
-    env_suffix: "_DEV"
-    mgmt_db: "MGMT_DB_DEV"
-    gov_db: "GOVERNANCE_DB_DEV"
-    fin_db: "FINANCE_DB_DEV"
-    mkt_db: "MARKETING_DB_DEV"
-    eco_db: "ECOMMERCE_DB_DEV"
-    ret_db: "RETAIL_DB_DEV"
-    ana_db: "ANALYTICS_DB_DEV"
-  
+    env_suffix: '_DEV'
+    wh_size: 'XSMALL'
+    credit_price_usd: 4.0
+    retention_days: 30
+    mgmt_db: 'MGMT_DB_DEV'
+    fin_db: 'FINANCE_DB_DEV'
+    mkt_db: 'MARKETING_DB_DEV'
+    eco_db: 'ECOMMERCE_DB_DEV'
+    ret_db: 'RETAIL_DB_DEV'
+    ana_db: 'ANALYTICS_DB_DEV'
+    loy_db: 'LOYALTY_DB_DEV'
   configurations:
-    dev:
-      env_suffix: "_DEV"
-      mgmt_db: "MGMT_DB_DEV"
-      gov_db: "GOVERNANCE_DB_DEV"
-      fin_db: "FINANCE_DB_DEV"
-      mkt_db: "MARKETING_DB_DEV"
-      eco_db: "ECOMMERCE_DB_DEV"
-      ret_db: "RETAIL_DB_DEV"
-      ana_db: "ANALYTICS_DB_DEV"
-    prod:
-      env_suffix: "_PROD"
-      mgmt_db: "MGMT_DB_PROD"
-      gov_db: "GOVERNANCE_DB_PROD"
-      fin_db: "FINANCE_DB_PROD"
-      mkt_db: "MARKETING_DB_PROD"
-      eco_db: "ECOMMERCE_DB_PROD"
-      ret_db: "RETAIL_DB_PROD"
-      ana_db: "ANALYTICS_DB_PROD"
+    DEV:
+      env_suffix: '_DEV'
+      wh_size: 'XSMALL'
+      mgmt_db: 'MGMT_DB_DEV'
+      fin_db: 'FINANCE_DB_DEV'
+      mkt_db: 'MARKETING_DB_DEV'
+      eco_db: 'ECOMMERCE_DB_DEV'
+      ret_db: 'RETAIL_DB_DEV'
+      ana_db: 'ANALYTICS_DB_DEV'
+      loy_db: 'LOYALTY_DB_DEV'
+    UAT:
+      env_suffix: '_UAT'
+      wh_size: 'SMALL'
+      mgmt_db: 'MGMT_DB_UAT'
+      fin_db: 'FINANCE_DB_UAT'
+      mkt_db: 'MARKETING_DB_UAT'
+      eco_db: 'ECOMMERCE_DB_UAT'
+      ret_db: 'RETAIL_DB_UAT'
+      ana_db: 'ANALYTICS_DB_UAT'
+      loy_db: 'LOYALTY_DB_UAT'
+    PROD:
+      env_suffix: ''
+      wh_size: 'MEDIUM'
+      mgmt_db: 'MGMT_DB'
+      fin_db: 'FINANCE_DB'
+      mkt_db: 'MARKETING_DB'
+      eco_db: 'ECOMMERCE_DB'
+      ret_db: 'RETAIL_DB'
+      ana_db: 'ANALYTICS_DB'
+      loy_db: 'LOYALTY_DB'
