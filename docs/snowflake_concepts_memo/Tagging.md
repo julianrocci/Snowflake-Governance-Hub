@@ -19,6 +19,11 @@ data_sensitivity = PII (RGPD)
 data_sensitivity = PCI
 (used to apply masking policies on columns with this tag)
 
+Tag "data_classification" :
+CONFIDENTIAL (Restricted access to the management committee + finance)
+INTERNAL (All employees can read)
+PUBLIC (Shareable with external partners : data sharing)
+
 Optional
 (can be redundant if you already have your env as a suffix in your db / wh)
 Tag "environment":
