@@ -22,7 +22,6 @@ targets:
 templating:
   defaults:
     env_suffix: '_DEV'
-    wh_size: 'XSMALL'
     credit_price_usd: 4.0
     retention_days: 30
     mgmt_db: 'MGMT_DB_DEV'
@@ -32,10 +31,42 @@ templating:
     ret_db: 'RETAIL_DB_DEV'
     ana_db: 'ANALYTICS_DB_DEV'
     loy_db: 'LOYALTY_DB_DEV'
+    warehouses:
+      - name: MGMT
+        wh_size: 'XSMALL'
+        auto_suspend: 60
+        comment: 'Management — governance, admin, orchestration'
+      - name: FIN
+        wh_size: 'XSMALL'
+        auto_suspend: 120
+        comment: 'Finance — reporting and reconciliation'
+      - name: MKT
+        wh_size: 'XSMALL'
+        auto_suspend: 120
+        comment: 'Marketing — campaigns and attribution'
+      - name: ECO
+        wh_size: 'XSMALL'
+        auto_suspend: 120
+        comment: 'E-Commerce — orders and catalog'
+      - name: RET
+        wh_size: 'XSMALL'
+        auto_suspend: 120
+        comment: 'Retail — stores and inventory'
+      - name: ANA
+        wh_size: 'XSMALL'
+        auto_suspend: 300
+        comment: 'Analytics — dashboards and ad-hoc queries (high concurrency)'
+      - name: LOY
+        wh_size: 'XSMALL'
+        auto_suspend: 120
+        comment: 'Loyalty — rewards and customer programs'
+      - name: TRANSFORM
+        wh_size: 'XSMALL'
+        auto_suspend: 300
+        comment: 'ELT/dbt transformations (heavy workload)'
   configurations:
     DEV:
       env_suffix: '_DEV'
-      wh_size: 'XSMALL'
       mgmt_db: 'MGMT_DB_DEV'
       fin_db: 'FINANCE_DB_DEV'
       mkt_db: 'MARKETING_DB_DEV'
@@ -45,7 +76,6 @@ templating:
       loy_db: 'LOYALTY_DB_DEV'
     UAT:
       env_suffix: '_UAT'
-      wh_size: 'SMALL'
       mgmt_db: 'MGMT_DB_UAT'
       fin_db: 'FINANCE_DB_UAT'
       mkt_db: 'MARKETING_DB_UAT'
@@ -55,7 +85,6 @@ templating:
       loy_db: 'LOYALTY_DB_UAT'
     PROD:
       env_suffix: ''
-      wh_size: 'MEDIUM'
       mgmt_db: 'MGMT_DB'
       fin_db: 'FINANCE_DB'
       mkt_db: 'MARKETING_DB'
@@ -63,3 +92,36 @@ templating:
       ret_db: 'RETAIL_DB'
       ana_db: 'ANALYTICS_DB'
       loy_db: 'LOYALTY_DB'
+      warehouses:
+        - name: MGMT
+          wh_size: 'SMALL'
+          auto_suspend: 60
+          comment: 'Management — governance, admin, orchestration'
+        - name: FIN
+          wh_size: 'MEDIUM'
+          auto_suspend: 120
+          comment: 'Finance — reporting and reconciliation'
+        - name: MKT
+          wh_size: 'SMALL'
+          auto_suspend: 120
+          comment: 'Marketing — campaigns and attribution'
+        - name: ECO
+          wh_size: 'LARGE'
+          auto_suspend: 120
+          comment: 'E-Commerce — orders and catalog'
+        - name: RET
+          wh_size: 'MEDIUM'
+          auto_suspend: 120
+          comment: 'Retail — stores and inventory'
+        - name: ANA
+          wh_size: 'LARGE'
+          auto_suspend: 300
+          comment: 'Analytics — dashboards and ad-hoc queries (high concurrency)'
+        - name: LOY
+          wh_size: 'MEDIUM'
+          auto_suspend: 120
+          comment: 'Loyalty — rewards and customer programs'
+        - name: TRANSFORM
+          wh_size: 'LARGE'
+          auto_suspend: 300
+          comment: 'ELT/dbt transformations (heavy workload)'
