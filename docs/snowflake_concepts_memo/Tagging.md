@@ -7,12 +7,7 @@ owner = analytics_team
 Tag "domain":
 domain = finance
 domain = marketing
-domain = growth
-
-Tag "environment":
-env = dev
-env = staging
-env = prod
+domain = ecommerce
 
 Tag "cost_center" or "project" :
 cost_center = FIN_01
@@ -23,3 +18,10 @@ Tag "data_sensitivity" :
 data_sensitivity = PII (RGPD)
 data_sensitivity = PCI
 (used to apply masking policies on columns with this tag)
+
+Optional
+(can be redundant if you already have your env as a suffix in your db / wh)
+Tag "environment":
+env = dev
+env = uat
+env = prod
