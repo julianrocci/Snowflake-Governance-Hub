@@ -33,4 +33,4 @@ GROUP BY
     user_name,
     role_name,
     DATE_TRUNC('day', start_time),
-    domain
+    {{ get_domain_from_warehouse('warehouse_name') }}
