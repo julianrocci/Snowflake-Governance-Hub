@@ -19,7 +19,7 @@ WITH base_clustering AS (
         DATE_TRUNC('month', start_time) AS event_month,
         credits_used,
         num_bytes_reclustered
-    FROM {{ ref('stg_snowflake_autoclustering_history') }}
+    FROM {{ ref('stg_autoclustering_history') }}
 ),
 
 daily_aggregation AS (
@@ -33,12 +33,12 @@ daily_aggregation AS (
         SUM(credits_used) AS daily_credits_used,
         ROUND(SUM(num_bytes_reclustered) / POWER(1024, 3), 2) AS daily_gb_reclustered
     FROM base_clustering
-    GROUP BY 
-        full_table_name, 
-        database_name, 
-        schema_name, 
-        table_name, 
-        event_date, 
+    GROUP BY
+        full_table_name,
+        database_name,
+        schema_name,
+        table_name,
+        event_date,
         event_month
 )
 
