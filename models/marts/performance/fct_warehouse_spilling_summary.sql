@@ -31,22 +31,12 @@ warehouse_aggregation AS (
             SUM(is_critical_remote_spill) / NULLIF(COUNT(query_id), 0) * 100, 
             2
         ) AS pct_critical_remote_spilling
-
     FROM int_spilling
     GROUP BY warehouse_name
 )
 
 SELECT 
     *,
-    -- Business Domain Mapping
-    CASE 
-        WHEN warehouse_name LIKE 'FIN_%' THEN 'FINANCE'
-        WHEN warehouse_name LIKE 'MKT_%' THEN 'MARKETING'
-        WHEN warehouse_name LIKE 'ECO_%' THEN 'ECOMMERCE'
-        WHEN warehouse_name LIKE 'RET_%' THEN 'RETAIL'
-        WHEN warehouse_name LIKE 'ANA_%' THEN 'ANALYTICS'
-        WHEN warehouse_name LIKE 'TRANSFORM_%' THEN 'DATA_ENG'
-        ELSE 'OTHER'
-    END AS domain
+    {{ get_domain_from_warehouse('warehouse_name') }} AS domain
 FROM warehouse_aggregation
 ORDER BY domain, pct_critical_remote_spilling DESC

@@ -27,25 +27,14 @@ warehouse_aggregation AS (
         -- %tage of queries with high efficiency (over 50% from Local SSD)
         ROUND(SUM(is_local_efficient) / NULLIF(COUNT(query_id), 0) * 100, 2) AS pct_local_disk_efficient,
 
-        -- %tage of queries with poor efficiency (over 50% from Remote Storage)
+        -- %tage of queries hitting Remote Storage (slowest path)
         ROUND(SUM(is_remote_heavy) / NULLIF(COUNT(query_id), 0) * 100, 2) AS pct_remote_disk_heavy
-
     FROM int_perf
     GROUP BY warehouse_name
 )
 
 SELECT 
     *,
-    -- By Business domain
-    CASE 
-        WHEN warehouse_name LIKE 'FIN_%' THEN 'FINANCE'
-        WHEN warehouse_name LIKE 'MKT_%' THEN 'MARKETING'
-        WHEN warehouse_name LIKE 'ECO_%' THEN 'ECOMMERCE'
-        WHEN warehouse_name LIKE 'RET_%' THEN 'RETAIL'
-        WHEN warehouse_name LIKE 'ANA_%' THEN 'ANALYTICS'
-        WHEN warehouse_name LIKE 'TRANSFORM_%' THEN 'DATA_ENG'
-        ELSE 'OTHER'
-    END AS domain
-
+    {{ get_domain_from_warehouse('warehouse_name') }} AS domain
 FROM warehouse_aggregation
 ORDER BY domain, avg_execution_time_ms DESC

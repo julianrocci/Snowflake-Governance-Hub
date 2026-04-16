@@ -17,30 +17,20 @@ SELECT
     -- Grouping by Day to see trends
     DATE_TRUNC('day', start_time) AS execution_date,
     
-    -- Domain Mapping
-    CASE 
-        WHEN warehouse_name LIKE 'FIN_%' THEN 'FINANCE'
-        WHEN warehouse_name LIKE 'MKT_%' THEN 'MARKETING'
-        WHEN warehouse_name LIKE 'ECO_%' THEN 'ECOMMERCE'
-        WHEN warehouse_name LIKE 'RET_%' THEN 'RETAIL'
-        WHEN warehouse_name LIKE 'ANA_%' THEN 'ANALYTICS'
-        WHEN warehouse_name LIKE 'TRANSFORM_%' THEN 'DATA_ENG'
-        ELSE 'OTHER'
-    END AS domain,
+    {{ get_domain_from_warehouse('warehouse_name') }} AS domain,
 
     -- Metrics
     COUNT(query_id) AS total_queries,
     SUM(execution_time_seconds) AS total_execution_time_seconds,
     
-    -- Behavior Counters (using COUNT_IF for Snowflake optimization)
-    COUNT_IF(is_potential_wakeup = TRUE) AS total_wakeups,
-    COUNT_IF(is_isolated_expensive_query = TRUE) AS total_isolated_queries
+    -- Behavior Counters (useful for alerting)
+    SUM(CASE WHEN is_wakeup_query THEN 1 ELSE 0 END) AS wakeup_count,
+    SUM(CASE WHEN is_isolated_query THEN 1 ELSE 0 END) AS isolated_query_count
 
 FROM behavior_base
-
-GROUP BY 
-    warehouse_name, 
-    user_name, 
-    role_name, 
-    execution_date,
+GROUP BY
+    warehouse_name,
+    user_name,
+    role_name,
+    DATE_TRUNC('day', start_time),
     domain

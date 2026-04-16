@@ -34,15 +34,6 @@ monthly_table_aggregation AS (
 
 SELECT 
     *,
-    -- Domain Mapping
-    CASE 
-        WHEN database_name LIKE 'FIN_%' OR schema_name LIKE 'FIN_%' THEN 'FINANCE'
-        WHEN database_name LIKE 'MKT_%' OR schema_name LIKE 'MKT_%' THEN 'MARKETING'
-        WHEN database_name LIKE 'ECO_%' OR schema_name LIKE 'ECO_%' THEN 'ECOMMERCE'
-        WHEN database_name LIKE 'RET_%' OR schema_name LIKE 'RET_%' THEN 'RETAIL'
-        WHEN database_name LIKE 'ANA_%' OR schema_name LIKE 'ANA_%' THEN 'ANALYTICS'
-        WHEN database_name LIKE 'RAW%'   OR schema_name LIKE 'STAGING%' THEN 'DATA_ENG'
-        ELSE 'OTHER'
-    END AS domain
+    {{ get_domain_from_database('database_name') }} AS domain
 FROM monthly_table_aggregation
 ORDER BY event_month DESC, total_monthly_credits DESC
