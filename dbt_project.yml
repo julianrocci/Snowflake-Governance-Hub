@@ -17,6 +17,9 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
+vars:
+  credit_price_usd: 4.0
+
 # Global configurations for models
 models:
   cost_governance:
