@@ -6,7 +6,7 @@ cost_governance_profile:
       account: sq73917
       user: JULIANROCCI
       role: ACCOUNTADMIN
-      database: GOVERNANCE_DB
-      warehouse: COMPUTE_WH
-      schema: main
+      database: MGMT_DB_DEV
+      warehouse: MGMT_WH_DEV
+      schema: COST_GOVERNANCE
       threads: 4
