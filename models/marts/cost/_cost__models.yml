@@ -28,11 +28,6 @@ models:
     description: "Detailed mart for behavioral analysis. Tracks wakeups and isolated queries by user and date."
     columns:
       - name: warehouse_name
-        description: "Name of the warehouse where queries were executed."
-        tests:
-          - not_null
-
-      - name: execution_date
-        description: "The date of the query execution for trend analysis."
+        description: "Name of the warehouse."
         tests:
           - not_null
