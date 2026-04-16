@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: stg_warehouse_metering
+    description: "Cleaned warehouse metering data — hourly credit consumption per warehouse (last 30 days)"
+    columns:
+      - name: metering_id
+        description: "Surrogate key (MD5 of warehouse_name + start_time)"
+        tests:
+          - unique
+          - not_null
+      - name: warehouse_name
+        tests:
+          - not_null
+      - name: credits_used
+        tests:
+          - not_null
+
+  - name: stg_query_history
+    description: "Cleaned query history — execution metrics, cache, spilling (last 30 days, warehouse queries only)"
+    columns:
+      - name: query_id
+        tests:
+          - unique
+          - not_null
+      - name: warehouse_name
+        tests:
+          - not_null
+
+  - name: stg_autoclustering_history
+    description: "Automatic clustering events — credits and bytes reclustered per table (last 30 days)"
+    columns:
+      - name: table_name
+        tests:
+          - not_null
+      - name: credits_used
+        tests:
+          - not_null
