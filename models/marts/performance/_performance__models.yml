@@ -1,0 +1,52 @@
+version: 2
+
+models:
+  - name: fct_query_spilling_details
+    description: "Granular spilling details for queries exceeding local/remote thresholds — used for Top N problem queries"
+    columns:
+      - name: query_id
+        tests:
+          - unique
+          - not_null
+      - name: warehouse_name
+        tests:
+          - not_null
+      - name: domain
+        tests:
+          - not_null
+          - accepted_values:
+              values: ['FINANCE', 'MARKETING', 'ECOMMERCE', 'RETAIL', 'ANALYTICS', 'LOYALTY', 'MANAGEMENT', 'DATA_ENG', 'OTHER']
+
+  - name: fct_serverless_autoclustering_mart
+    description: "Monthly clustering costs by table and domain — identifies high-cost tables and serverless credit consumption"
+    columns:
+      - name: full_table_name
+        tests:
+          - not_null
+      - name: domain
+        tests:
+          - not_null
+
+  - name: fct_warehouse_cache_performance
+    description: "Cache performance distribution per warehouse — result cache, local disk, remote storage ratios"
+    columns:
+      - name: warehouse_name
+        tests:
+          - unique
+          - not_null
+      - name: cache_performance_tier
+        tests:
+          - accepted_values:
+              values: ['EXCELLENT', 'GOOD', 'CRITICAL', 'NEEDS_REVIEW']
+
+  - name: fct_warehouse_spilling_summary
+    description: "Aggregated spilling metrics per warehouse — local and remote spilling ratios with severity classification"
+    columns:
+      - name: warehouse_name
+        tests:
+          - unique
+          - not_null
+      - name: spilling_severity
+        tests:
+          - accepted_values:
+              values: ['CRITICAL', 'WARNING', 'HEALTHY']
