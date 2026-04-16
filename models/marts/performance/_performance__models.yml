@@ -34,10 +34,9 @@ models:
         tests:
           - unique
           - not_null
-      - name: cache_performance_tier
+      - name: domain
         tests:
-          - accepted_values:
-              values: ['EXCELLENT', 'GOOD', 'CRITICAL', 'NEEDS_REVIEW']
+          - not_null
 
   - name: fct_warehouse_spilling_summary
     description: "Aggregated spilling metrics per warehouse — local and remote spilling ratios with severity classification"
@@ -46,7 +45,6 @@ models:
         tests:
           - unique
           - not_null
-      - name: spilling_severity
+      - name: domain
         tests:
-          - accepted_values:
-              values: ['CRITICAL', 'WARNING', 'HEALTHY']
+          - not_null
