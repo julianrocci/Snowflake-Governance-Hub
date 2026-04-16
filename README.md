@@ -1,82 +1,42 @@
-Project Scope — Snowflake Data Cost Governance
+**Focus : Data Governance | Cost Optimization | Performance Tuning**
 
-1. Context & Motivation
+This project demonstrates a production-ready framework designed to govern, monitor, and optimize a large-scale Snowflake environment. It solves the "hidden costs" pricing problem by providing full transparency and actionable control over data operations.
 
-Snowflake provides a powerful and flexible data platform, but its consumption-based pricing model can quickly lead to uncontrolled costs if usage is not properly monitored and governed.
+**Tech Stack**
+Storage & Compute: Snowflake
 
-In many organizations, Snowflake costs are observed only at a high level (monthly invoice), with limited visibility into which teams, workloads, or users are responsible for the consumption.
+Transformation: dbt (Data Build Tool)
 
-This project aims to address this gap by designing a data cost governance layer on top of Snowflake system metadata, enabling clear cost attribution, waste detection, and actionable optimization insights.
+IaC / DevOps: DCM (Database Change Management) – Ensuring automated, auditable, and version-controlled infrastructure.
 
-2. Target Users
+Visualization: Advanced Analytics Dashboards (Cost & Performance tracking).
 
-This project is designed for the following profiles:
+**Key Pillars & Solutions**
+❄️ Cost Optimization (FinOps)
+Visibility: Attribution of costs by Team, Domain, Environment, and Workload using metadata & tags.
 
-Data Platform Owner / Head of Data
--Needs visibility into global Snowflake usage and cost drivers
--Wants to identify cost inefficiencies and justify budget decisions
+Waste Detection: Identification of oversized warehouses, unused resources, and "expensive" query patterns.
 
-Data Engineers / Analytics Engineers
--Want to understand why certain queries or warehouses are expensive
--Need concrete insights to optimize performance and resource usage
+❄️ Data Governance & Security
+Access Control: Robust RBAC (Role-Based Access Control) hierarchy.
 
-Finance / FinOps Teams
--Require reliable cost attribution by team, environment, or cost center
--Need consistent metrics for internal chargeback and forecasting
+Tagging Standards: Enforcing metadata standards.
 
-3. Problems Addressed
+PII Management: Secure handling of sensitive data (masking/security policies).
 
-The project focuses on the following recurring enterprise problems:
+❄️ Performance Tuning
+Query Efficiency: Monitoring and optimizing high-latency/high-cost queries (unused cache, data spilling, serverless features, etc..).
 
-Lack of granular visibility into Snowflake costs
-Inability to attribute costs to teams, environments, or workloads
-Difficulty identifying inefficient or unused resources
+Warehouse Sizing: Strategic management of compute resources to balance speed and credit consumption.
 
-4. Project Objectives
+ELT Reliability: Modern dbt-driven pipelines for clean, testable, and scalable data.
 
-The core objectives of this project are:
+**Decision-Ready Analytics**
+The project includes a dedicated analytics layer (Dashboards) to enable:
 
-Provide cost visibility at multiple levels (warehouse, team, workload)
-Enable cost attribution using Snowflake tags
-Identify inefficient usage patterns and potential waste
-Produce actionable recommendations for cost optimization
-Establish a repeatable and auditable cost governance framework
 
-5. Key Decisions Enabled
+Resizing decisions based on actual compute usage.
 
-The cost governance layer is designed to support concrete operational and strategic decisions, such as:
+Workload isolation strategies.
 
-Resizing or consolidating Snowflake warehouses
-Enforcing workload isolation strategies
-Removing unused or underutilized resources
-Defining and enforcing tagging standards
-Supporting internal chargeback or showback models
-
-6. Key Metrics (KPIs)
-
-The project exposes the following core metrics:
-
-Total Snowflake cost per day and per month
-Cost by warehouse
-Cost by team and environment (via tags)
-Cost by workload type (BI, ETL, ML)
-Top cost-generating users and queries
-Estimated percentage of inefficient usage
-
-7. Out of Scope
-
-To maintain focus and realism, the following topics are intentionally excluded from this project:
-
-Automated cost optimization or self-healing systems
-Machine learning–based cost prediction
-Cloud provider–level billing reconciliation
-
-8. Learning Objectives
-
-Beyond the functional goals, this project also serves as a structured learning exercise to deepen myunderstanding of:
-
-Snowflake cost and billing mechanisms
-Warehouse sizing and workload management
-Query performance analysis
-Tag-based cost attribution
-Enterprise data governance principles
+Automatic alerting on cost anomalies.
