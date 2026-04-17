@@ -27,6 +27,28 @@ GRANT CREATE TABLE, CREATE VIEW ON SCHEMA {{db}}.MARTS TO DATABASE ROLE {{db}}.A
 
 {% endmacro %}
 
+{% macro _domain_account_roles(db, wh_prefix) %}
+DEFINE ROLE {{wh_prefix}}_READER{{env_suffix}}
+    COMMENT = 'Account role — read MARTS + warehouse access for {{db}}';
+GRANT DATABASE ROLE {{db}}.READER TO ROLE {{wh_prefix}}_READER{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_WH{{env_suffix}}_USER TO ROLE {{wh_prefix}}_READER{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_READER{{env_suffix}} TO ROLE SYSADMIN;
+
+DEFINE ROLE {{wh_prefix}}_ANALYST{{env_suffix}}
+    COMMENT = 'Account role — read STAGING + MARTS + warehouse access for {{db}}';
+GRANT DATABASE ROLE {{db}}.ANALYST TO ROLE {{wh_prefix}}_ANALYST{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_WH{{env_suffix}}_USER TO ROLE {{wh_prefix}}_ANALYST{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_READER{{env_suffix}} TO ROLE {{wh_prefix}}_ANALYST{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_ANALYST{{env_suffix}} TO ROLE SYSADMIN;
+
+DEFINE ROLE {{wh_prefix}}_ADMIN{{env_suffix}}
+    COMMENT = 'Account role — full access + warehouse for {{db}}';
+GRANT DATABASE ROLE {{db}}.ADMIN TO ROLE {{wh_prefix}}_ADMIN{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_WH{{env_suffix}}_USER TO ROLE {{wh_prefix}}_ADMIN{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_ANALYST{{env_suffix}} TO ROLE {{wh_prefix}}_ADMIN{{env_suffix}};
+GRANT ROLE {{wh_prefix}}_ADMIN{{env_suffix}} TO ROLE SYSADMIN;
+{% endmacro %}
+
 {% macro _analytics_roles(db) %}
 DEFINE DATABASE ROLE {{db}}.READER
     COMMENT = 'Read-only access to cross-domain MARTS';
@@ -68,6 +90,31 @@ GRANT ROLE {{wh.name}}_WH{{env_suffix}}_USER TO ROLE SYSADMIN;
 {{ _analytics_roles(ana_db) }}
 
 
+-- DOMAIN ACCOUNT ROLES (bundle: database role + warehouse — assignable to users)
+
+{{ _domain_account_roles(fin_db, 'FIN') }}
+{{ _domain_account_roles(mkt_db, 'MKT') }}
+{{ _domain_account_roles(eco_db, 'ECO') }}
+{{ _domain_account_roles(ret_db, 'RET') }}
+{{ _domain_account_roles(loy_db, 'LOY') }}
+
+
+-- MANAGEMENT ACCOUNT ROLES (bundle: governance db roles + warehouse)
+
+DEFINE ROLE MGMT_READER{{env_suffix}}
+    COMMENT = 'Account role — read governance schemas + warehouse access';
+GRANT DATABASE ROLE {{mgmt_db}}.GOVERNANCE_READER TO ROLE MGMT_READER{{env_suffix}};
+GRANT ROLE MGMT_WH{{env_suffix}}_USER TO ROLE MGMT_READER{{env_suffix}};
+GRANT ROLE MGMT_READER{{env_suffix}} TO ROLE SYSADMIN;
+
+DEFINE ROLE MGMT_ADMIN{{env_suffix}}
+    COMMENT = 'Account role — full governance access + warehouse';
+GRANT DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN TO ROLE MGMT_ADMIN{{env_suffix}};
+GRANT ROLE MGMT_WH{{env_suffix}}_USER TO ROLE MGMT_ADMIN{{env_suffix}};
+GRANT ROLE MGMT_READER{{env_suffix}} TO ROLE MGMT_ADMIN{{env_suffix}};
+GRANT ROLE MGMT_ADMIN{{env_suffix}} TO ROLE SYSADMIN;
+
+
 -- MANAGEMENT DB ROLES
 
 DEFINE DATABASE ROLE {{mgmt_db}}.GOVERNANCE_READER
@@ -88,10 +135,10 @@ GRANT SELECT ON ALL TABLES IN SCHEMA {{mgmt_db}}.ACCESS_GOVERNANCE TO DATABASE R
 
 
 GRANT CREATE TABLE, CREATE VIEW ON SCHEMA {{mgmt_db}}.COST_GOVERNANCE TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
-GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{mgmt_db}}.COST_GOVERNANCE TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{mgmt_db}}.COST_GOVERNANCE TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
 
 GRANT CREATE TABLE, CREATE VIEW ON SCHEMA {{mgmt_db}}.ACCESS_GOVERNANCE TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
-GRANT INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{mgmt_db}}.ACCESS_GOVERNANCE TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{mgmt_db}}.ACCESS_GOVERNANCE TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
 
 GRANT USAGE ON SCHEMA {{mgmt_db}}.CONFIG TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
 GRANT CREATE TABLE, CREATE VIEW ON SCHEMA {{mgmt_db}}.CONFIG TO DATABASE ROLE {{mgmt_db}}.GOVERNANCE_ADMIN;
@@ -155,7 +202,16 @@ GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA {{mgmt_db}}.ACCESS_
 
 
 -- CROSS-DOMAIN READ ACCESS
+-- Database roles cannot be granted cross-database.
+-- Use an account role as bridge: each domain READER → account role → SYSADMIN.
+
+DEFINE ROLE ANALYTICS_CROSS_READER{{env_suffix}}
+    COMMENT = 'Bridge role — aggregates READER access from all domains for Analytics';
 
 {% for db_var in [fin_db, mkt_db, eco_db, ret_db, loy_db] %}
-GRANT DATABASE ROLE {{db_var}}.READER TO DATABASE ROLE {{ana_db}}.ADMIN;
+GRANT DATABASE ROLE {{db_var}}.READER TO ROLE ANALYTICS_CROSS_READER{{env_suffix}};
 {% endfor %}
+
+GRANT DATABASE ROLE {{ana_db}}.ADMIN TO ROLE ANALYTICS_CROSS_READER{{env_suffix}};
+GRANT ROLE ANA_WH{{env_suffix}}_USER TO ROLE ANALYTICS_CROSS_READER{{env_suffix}};
+GRANT ROLE ANALYTICS_CROSS_READER{{env_suffix}} TO ROLE SYSADMIN;
