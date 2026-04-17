@@ -15,7 +15,7 @@ targets:
     templating_config: 'UAT'
   PROD:
     account_identifier: sq73917
-    project_name: 'MGMT_DB.DCM.COST_GOVERNANCE_DCM_PROD'
+    project_name: 'MGMT_DB.DCM.COST_GOVERNANCE_DCM'
     project_owner: DCM_DEPLOYER
     templating_config: 'PROD'
 
