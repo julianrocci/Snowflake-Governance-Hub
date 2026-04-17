@@ -1,6 +1,3 @@
-DEFINE DATABASE {{mgmt_db}}
-    COMMENT = 'Management database — governance, orchestration, configuration';
-
 DEFINE SCHEMA {{mgmt_db}}.COST_GOVERNANCE
     WITH MANAGED ACCESS
     COMMENT = 'Cost and performance governance — marts and staging'
