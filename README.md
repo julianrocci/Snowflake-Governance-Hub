@@ -34,8 +34,8 @@ Warehouse Sizing: Strategic management of compute resources to balance speed and
 ELT Reliability: Modern dbt-driven pipelines for clean, testable, and scalable data.
 
 **Decision-Ready Analytics**
-The project includes a dedicated analytics layer (Dashboards) to enable:
 
+The project includes a dedicated analytics layer (Dashboards) to enable:
 
 Resizing decisions based on actual compute usage.
 
