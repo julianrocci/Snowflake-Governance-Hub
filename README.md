@@ -2,6 +2,57 @@
 
 This project demonstrates a production-ready framework designed to govern, monitor, and optimize a large-scale Snowflake environment. It solves the "hidden costs" pricing problem by providing full transparency and actionable control over data operations.
 
+<details>
+<summary>📁 View Project Structure </summary>
+
+```
+cost_governance/                              ← Git repo root
+├── dcm/                                      ← Infrastructure (DCM)
+│   ├── manifest.yml
+│   ├── sources/definitions/
+│   │   ├── infrastructure.sql                (databases, schemas, warehouses)
+│   │   ├── access.sql                        (roles, grants, macros)
+│   │   ├── tables.sql                        (config tables)
+│   │   └── tags.sql                          (governance tags)
+│   └── scripts/
+│       ├── bootstrap_pre_deploy_DCM.sql      (one-shot setup)
+│       ├── bootstrap_secondary_roles_post_deploy_DCM.sql
+│       └── post_deploy_DCM_future_grants.sql (after each DCM deploy)
+├── dbt/                                      ← Transformations (dbt)
+│   ├── dbt_project.yml
+│   ├── profiles.yml
+│   ├── macros/
+│   │   └── domain_mapping.sql                (domain/env resolution)
+│   └── models/
+│       ├── staging/
+│       │   ├── src_snowflake.yml             (source definitions)
+│       │   ├── _stg__models.yml              (tests)
+│       │   ├── stg_warehouse_metering.sql
+│       │   └── ...
+│       ├── intermediate/
+│       │   ├── cost/
+│       │   │   ├── int_warehouse_efficiency_summary.sql
+│       │   │   └── ...
+│       │   └── performance/
+│       │       ├── int_warehouse_spilling_performance.sql
+│       │       └── ...
+│       └── marts/
+│           ├── cost/
+│           │   ├── _cost__models.yml          (tests)
+│           │   ├── fct_warehouse_efficiency.sql
+│           │   └── ...
+│           └── performance/
+│               ├── _performance__models.yml   (tests)
+│               ├── fct_warehouse_cache_performance.sql
+│               └── ...
+├── .github/workflows/                        ← CI/CD (future)
+├── .gitignore
+├── DELIVERY_LOG.md
+└── README.md
+  ```
+
+</details>
+
 **Tech Stack**
 
 Storage & Compute: Snowflake
