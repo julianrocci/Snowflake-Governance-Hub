@@ -1,1 +1,9 @@
+#MacOS files
 .DS_Store
+
+# dbt artifacts
+dbt/target/
+dbt/logs/
+
+# DCM artifacts
+dcm/out/
