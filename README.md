@@ -11,7 +11,7 @@ cost_governance/                                          ← Git repo root
 │   ├── manifest.yml
 │   ├── sources/definitions/
 │   │   ├── infrastructure.sql                            (databases, schemas, warehouses)
-│   │   ├── access.sql                                    (roles, grants, macros)
+│   │   ├── access.sql                                    (roles, grants)
 │   │   ├── tables.sql                                    (config tables)
 │   │   └── tags.sql                                      (governance tags)
 │   └── scripts/
@@ -45,7 +45,7 @@ cost_governance/                                          ← Git repo root
 │               ├── _performance__models.yml               (tests)
 │               ├── fct_warehouse_cache_performance.sql
 │               └── ...
-├── .github/workflows/                                      ← CI/CD (future)
+├── .github/workflows/                                     ← CI/CD (In Progress)
 ├── .gitignore
 ├── DELIVERY_LOG.md
 └── README.md
