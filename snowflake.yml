@@ -1,7 +1,0 @@
-definition_version: 1
-project:
-  name: cost_governance
-
-# We define the artifacts that Snowflake CLI will deploy
-artifacts:
-  - src: infra/*.sql
