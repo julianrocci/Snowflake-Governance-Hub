@@ -37,6 +37,9 @@ BEGIN
     -- Step 4: Grants — database-level
     EXECUTE IMMEDIATE 'GRANT ALL PRIVILEGES ON DATABASE ' || mgmt_db || ' TO ROLE DCM_DEPLOYER';
 
+    -- Step 4b: Grants — DCM container schema (needed for stage uploads during deploy)
+    EXECUTE IMMEDIATE 'GRANT ALL ON SCHEMA ' || mgmt_db || '.DCM TO ROLE DCM_DEPLOYER';
+
     -- Step 5: Grants — account-level (idempotent)
     EXECUTE IMMEDIATE 'GRANT CREATE ROLE ON ACCOUNT TO ROLE DCM_DEPLOYER';
     EXECUTE IMMEDIATE 'GRANT CREATE DATABASE ON ACCOUNT TO ROLE DCM_DEPLOYER';
