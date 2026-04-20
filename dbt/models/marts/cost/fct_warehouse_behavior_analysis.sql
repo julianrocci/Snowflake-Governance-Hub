@@ -2,8 +2,7 @@
    Focuses on identifying inefficient query patterns (Wakeups & Isolated queries). */
 
 {{ config(
-    materialized='table',
-    schema='mart_cost'
+    materialized='table'
 ) }}
 
 WITH behavior_base AS (

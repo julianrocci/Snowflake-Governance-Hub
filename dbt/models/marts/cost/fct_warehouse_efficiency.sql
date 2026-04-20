@@ -2,8 +2,7 @@
        This is the final table for the Cost Governance Dashboard. */
     
     {{ config(
-        materialized='table',
-        schema='mart_cost'
+        materialized='table'
     ) }}
     
     WITH efficiency_base AS (

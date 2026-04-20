@@ -4,8 +4,7 @@
 */
 
 {{ config(
-    materialized='table',
-    schema='mart_performance'
+    materialized='table'
 ) }}
 
 WITH int_spilling AS (
