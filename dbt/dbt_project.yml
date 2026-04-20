@@ -1,45 +1,30 @@
-# dbt_project.yml
-name: 'cost_governance'
+name: 'cost_governance_dbt'
 version: '1.0.0'
-config-version: 2
 
-# Connection to the profile defined above
-profile: 'cost_governance_profile'
+profile: 'default'
 
 model-paths: ["models"]
-analysis-paths: ["analyses"]
-test-paths: ["tests"]
 seed-paths: ["seeds"]
+test-paths: ["tests"]
 macro-paths: ["macros"]
-snapshot-paths: ["snapshots"]
 
+target-path: "target"
 clean-targets:
   - "target"
   - "dbt_packages"
 
 vars:
-  credit_price_usd: 4.0
+  credit_price_usd: 4.00
 
-# Global configurations for models
+# No +database and +schema as dbt will use it from profiles.yml
 models:
-  cost_governance:
-    # No +database as dbt will use it from profiles.yml file
-    # Layer 1: Raw data cleaning
+  cost_governance_dbt:
     staging:
-      +schema: staging
       +materialized: view
-    
-    # Layer 2: Business logic & KPIs calculation
     intermediate:
-      +schema: intermediate
       +materialized: ephemeral
-    
-    # Layer 3: Final reporting gold tables
     marts:
-      +materialized: table
       cost:
-        +schema: mart_cost
+        +materialized: table
       performance:
-        +schema: mart_performance
-      governance:
-        +schema: mart_governance
+        +materialized: table
