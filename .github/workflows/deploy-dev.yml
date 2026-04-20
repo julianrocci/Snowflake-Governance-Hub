@@ -43,9 +43,9 @@ jobs:
           chmod 0600 ~/.snowflake/config.toml
 
       - name: DCM Deploy
+        working-directory: dcm
         run: |
           snow dcm deploy MGMT_DB_DEV.DCM.COST_GOVERNANCE_DCM_DEV \
-            --project-dir dcm \
             --target DEV \
             --connection default
 

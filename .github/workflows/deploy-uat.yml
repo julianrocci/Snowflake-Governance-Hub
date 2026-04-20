@@ -46,9 +46,9 @@ jobs:
           chmod 0600 ~/.snowflake/config.toml
 
       - name: DCM Deploy
+        working-directory: dcm
         run: |
           snow dcm deploy MGMT_DB_UAT.DCM.COST_GOVERNANCE_DCM_UAT \
-            --project-dir dcm \
             --target UAT \
             --connection default
 
