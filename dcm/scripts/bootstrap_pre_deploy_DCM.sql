@@ -56,5 +56,10 @@ BEGIN
             ' TO ROLE DCM_DEPLOYER COPY CURRENT GRANTS';
     END IF;
 
+    -- Step 8: CI/CD service user (idempotent — created once, receives both roles)
+    EXECUTE IMMEDIATE 'CREATE USER IF NOT EXISTS SVC_CICD_DEPLOYER TYPE = SERVICE COMMENT = ''Service account for GitHub Actions CI/CD'' DEFAULT_ROLE = DCM_DEPLOYER';
+    EXECUTE IMMEDIATE 'GRANT ROLE DCM_DEPLOYER TO USER SVC_CICD_DEPLOYER';
+    EXECUTE IMMEDIATE 'GRANT ROLE TRANSFORM_ROLE' || env_suffix || ' TO USER SVC_CICD_DEPLOYER';
+
     RETURN 'SUCCESS: ' || dcm_project || ' ready for deployment.';
 END;
