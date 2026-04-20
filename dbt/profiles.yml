@@ -1,12 +1,30 @@
-cost_governance_profile:
+default:
   target: dev
   outputs:
     dev:
       type: snowflake
-      account: sq73917
-      user: JULIANROCCI
+      account: ""
+      user: ""
       role: ACCOUNTADMIN
       database: MGMT_DB_DEV
-      warehouse: MGMT_WH_DEV
+      warehouse: TRANSFORM_WH_DEV
+      schema: COST_GOVERNANCE
+      threads: 4
+    uat:
+      type: snowflake
+      account: ""
+      user: ""
+      role: ACCOUNTADMIN
+      database: MGMT_DB_UAT
+      warehouse: TRANSFORM_WH_UAT
+      schema: COST_GOVERNANCE
+      threads: 4
+    prod:
+      type: snowflake
+      account: ""
+      user: ""
+      role: ACCOUNTADMIN
+      database: MGMT_DB
+      warehouse: TRANSFORM_WH
       schema: COST_GOVERNANCE
       threads: 4
