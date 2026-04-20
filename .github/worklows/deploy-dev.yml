@@ -1,0 +1,44 @@
+name: Deploy DEV
+
+on:
+  push:
+    branches:
+      - 'release/*'
+
+env:
+  SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+  SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+  SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install tools
+        run: pip install snowflake-cli dbt-snowflake
+
+      - name: Write private key to file
+        run: echo "$SNOWFLAKE_PRIVATE_KEY" > /tmp/rsa_key.p8
+
+      - name: DCM Deploy
+        run: |
+          snow dcm deploy MGMT_DB_DEV.DCM.COST_GOVERNANCE_DCM_DEV \
+            --project-dir dcm \
+            --target DEV \
+            --connection default
+
+      - name: Post-deploy Future Grants
+        run: |
+          snow sql -q "CALL MGMT_DB_DEV.DCM.SETUP_FUTURE_GRANTS('DEV')" \
+            --connection default
+
+      - name: dbt Build
+        run: dbt build --project-dir dbt --target dev
