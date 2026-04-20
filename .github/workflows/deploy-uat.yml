@@ -43,6 +43,7 @@ jobs:
           role = "DCM_DEPLOYER"
           warehouse = "TRANSFORM_WH_UAT"
           EOF
+          chmod 0600 ~/.snowflake/config.toml
 
       - name: DCM Deploy
         run: |

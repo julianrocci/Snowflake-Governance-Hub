@@ -28,6 +28,20 @@ jobs:
       - name: Write private key to file
         run: echo "$SNOWFLAKE_PRIVATE_KEY" > /tmp/rsa_key.p8
 
+      - name: Configure Snow CLI
+        run: |
+          mkdir -p ~/.snowflake
+          cat > ~/.snowflake/config.toml << EOF
+          [connections.default]
+          account = "$SNOWFLAKE_ACCOUNT"
+          user = "$SNOWFLAKE_USER"
+          authenticator = "SNOWFLAKE_JWT"
+          private_key_file = "/tmp/rsa_key.p8"
+          role = "DCM_DEPLOYER"
+          warehouse = "TRANSFORM_WH_DEV"
+          EOF
+          chmod 0600 ~/.snowflake/config.toml
+
       - name: DCM Deploy
         run: |
           snow dcm deploy MGMT_DB_DEV.DCM.COST_GOVERNANCE_DCM_DEV \
