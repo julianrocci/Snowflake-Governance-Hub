@@ -15,6 +15,7 @@ raw_query_history as (
         database_name,
         schema_name,
         warehouse_name,
+        warehouse_size,
         user_name,
         role_name,
         execution_status,
@@ -23,10 +24,15 @@ raw_query_history as (
         -- Timing and duration
         start_time,
         end_time,
+        total_elapsed_time,
         datediff('second', start_time, end_time) as execution_time_seconds,
         
         -- Performance metrics
         rows_produced,
+        bytes_scanned as total_bytes_scanned,
+        percentage_scanned_from_cache,
+        bytes_spilled_to_local_storage,
+        bytes_spilled_to_remote_storage,
         (bytes_scanned / power(1024, 3)) as gb_scanned,
         (bytes_spilled_to_local_storage / power(1024, 3)) as gb_spilled_local,
         (bytes_spilled_to_remote_storage / power(1024, 3)) as gb_spilled_remote,
