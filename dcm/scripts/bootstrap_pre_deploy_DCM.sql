@@ -38,7 +38,7 @@ BEGIN
     -- Step 4b: Grants — DCM container schema (needed for stage uploads during deploy)
     EXECUTE IMMEDIATE 'GRANT ALL ON SCHEMA ' || mgmt_db || '.DCM TO ROLE DCM_DEPLOYER';
 
-    -- Step 5: Grants — account-level
+    -- Step 5: Grants — account-level (idempotent)
     EXECUTE IMMEDIATE 'GRANT CREATE ROLE ON ACCOUNT TO ROLE DCM_DEPLOYER';
     EXECUTE IMMEDIATE 'GRANT CREATE DATABASE ON ACCOUNT TO ROLE DCM_DEPLOYER';
     EXECUTE IMMEDIATE 'GRANT CREATE WAREHOUSE ON ACCOUNT TO ROLE DCM_DEPLOYER';
@@ -62,6 +62,25 @@ BEGIN
     EXECUTE IMMEDIATE 'GRANT ROLE DCM_DEPLOYER TO USER SVC_CICD_DEPLOY';
     EXECUTE IMMEDIATE 'GRANT ROLE SYSADMIN TO USER SVC_CICD_DEPLOY';
     EXECUTE IMMEDIATE 'GRANT ROLE ACCOUNTADMIN TO USER SVC_CICD_DEPLOY';
+
+    -- Step 9: User Management schema + audit table (only when MGMT_DB exists = PROD bootstrapped)
+    IF (mgmt_db = 'MGMT_DB') THEN
+        EXECUTE IMMEDIATE 'CREATE SCHEMA IF NOT EXISTS MGMT_DB.USER_MANAGEMENT WITH MANAGED ACCESS COMMENT = ''User lifecycle management — creation, grants, audit logging''';
+        EXECUTE IMMEDIATE '
+            CREATE TABLE IF NOT EXISTS MGMT_DB.USER_MANAGEMENT.USER_ACTIVITY_LOG (
+                ACTION_ID NUMBER AUTOINCREMENT PRIMARY KEY,
+                ACTION_TYPE VARCHAR(50) NOT NULL,
+                TARGET_USERS ARRAY NOT NULL,
+                PERFORMED_BY VARCHAR(256) NOT NULL,
+                ROLE_USED VARCHAR(256) NOT NULL,
+                DOMAINS_AFFECTED ARRAY,
+                GRANTS_DETAIL VARIANT,
+                COMMENT VARCHAR(1024),
+                ACTION_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
+            )
+            COMMENT = ''Audit log — tracks all user creation, grant changes, and disable actions''
+        ';
+    END IF;
 
     RETURN 'SUCCESS: DCM setup complete for ' || UPPER(ENV) || ' — project: ' || dcm_project;
 END;
