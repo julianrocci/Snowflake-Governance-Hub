@@ -23,24 +23,22 @@ BEGIN
     dcm_project := mgmt_db || '.DCM.COST_GOVERNANCE_DCM' || env_suffix;
 
     -- Step 1: Parent database
-    EXECUTE IMMEDIATE 'CREATE DATABASE IF NOT EXISTS ' || mgmt_db ||
-        ' COMMENT = ''Management database — ' || UPPER(ENV) || ' environment''';
+    EXECUTE IMMEDIATE 'CREATE DATABASE IF NOT EXISTS ' || mgmt_db;
 
     -- Step 2: DCM container schema
-    EXECUTE IMMEDIATE 'CREATE SCHEMA IF NOT EXISTS ' || mgmt_db ||
-        '.DCM COMMENT = ''DCM project container''';
+    EXECUTE IMMEDIATE 'CREATE SCHEMA IF NOT EXISTS ' || mgmt_db || '.DCM';
 
-    -- Step 3: Deployer role (idempotent — only created once across all envs)
+    -- Step 3: Deployer role
     EXECUTE IMMEDIATE 'CREATE ROLE IF NOT EXISTS DCM_DEPLOYER';
-    EXECUTE IMMEDIATE 'GRANT ROLE DCM_DEPLOYER TO ROLE ACCOUNTADMIN';
+    EXECUTE IMMEDIATE 'GRANT ROLE DCM_DEPLOYER TO ROLE SYSADMIN';
 
-    -- Step 4: Grants — database-level
+    -- Step 4a: Grants — parent database
     EXECUTE IMMEDIATE 'GRANT ALL PRIVILEGES ON DATABASE ' || mgmt_db || ' TO ROLE DCM_DEPLOYER';
 
     -- Step 4b: Grants — DCM container schema (needed for stage uploads during deploy)
     EXECUTE IMMEDIATE 'GRANT ALL ON SCHEMA ' || mgmt_db || '.DCM TO ROLE DCM_DEPLOYER';
 
-    -- Step 5: Grants — account-level (idempotent)
+    -- Step 5: Grants — account-level
     EXECUTE IMMEDIATE 'GRANT CREATE ROLE ON ACCOUNT TO ROLE DCM_DEPLOYER';
     EXECUTE IMMEDIATE 'GRANT CREATE DATABASE ON ACCOUNT TO ROLE DCM_DEPLOYER';
     EXECUTE IMMEDIATE 'GRANT CREATE WAREHOUSE ON ACCOUNT TO ROLE DCM_DEPLOYER';
@@ -60,9 +58,10 @@ BEGIN
     END IF;
 
     -- Step 8: CI/CD service user (idempotent — created once, receives both roles)
-    EXECUTE IMMEDIATE 'CREATE USER IF NOT EXISTS SVC_CICD_DEPLOYER TYPE = SERVICE COMMENT = ''Service account for GitHub Actions CI/CD'' DEFAULT_ROLE = DCM_DEPLOYER';
-    EXECUTE IMMEDIATE 'GRANT ROLE DCM_DEPLOYER TO USER SVC_CICD_DEPLOYER';
-    EXECUTE IMMEDIATE 'GRANT ROLE TRANSFORM_ROLE' || env_suffix || ' TO USER SVC_CICD_DEPLOYER';
+    EXECUTE IMMEDIATE 'CREATE USER IF NOT EXISTS SVC_CICD_DEPLOY DEFAULT_ROLE = DCM_DEPLOYER';
+    EXECUTE IMMEDIATE 'GRANT ROLE DCM_DEPLOYER TO USER SVC_CICD_DEPLOY';
+    EXECUTE IMMEDIATE 'GRANT ROLE SYSADMIN TO USER SVC_CICD_DEPLOY';
+    EXECUTE IMMEDIATE 'GRANT ROLE ACCOUNTADMIN TO USER SVC_CICD_DEPLOY';
 
-    RETURN 'SUCCESS: ' || dcm_project || ' ready for deployment.';
+    RETURN 'SUCCESS: DCM setup complete for ' || UPPER(ENV) || ' — project: ' || dcm_project;
 END;
