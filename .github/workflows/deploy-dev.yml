@@ -54,5 +54,23 @@ jobs:
           snow sql -q "CALL MGMT_DB_DEV.DCM.SETUP_FUTURE_GRANTS('DEV')" \
             --connection default
 
+      - name: Generate dbt profiles for CI/CD
+        run: |
+          cat > dbt/profiles.yml << EOF
+          default:
+            target: dev
+            outputs:
+              dev:
+                type: snowflake
+                account: $SNOWFLAKE_ACCOUNT
+                user: $SNOWFLAKE_USER
+                private_key_path: /tmp/rsa_key.p8
+                role: ACCOUNTADMIN
+                database: MGMT_DB_DEV
+                warehouse: TRANSFORM_WH_DEV
+                schema: COST_GOVERNANCE
+                threads: 4
+          EOF
+
       - name: dbt Build
         run: dbt build --project-dir dbt --profiles-dir dbt --target dev

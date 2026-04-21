@@ -57,5 +57,23 @@ jobs:
           snow sql -q "CALL MGMT_DB_UAT.DCM.SETUP_FUTURE_GRANTS('UAT')" \
             --connection default
 
+      - name: Generate dbt profiles for CI/CD
+        run: |
+          cat > dbt/profiles.yml << EOF
+          default:
+            target: uat
+            outputs:
+              uat:
+                type: snowflake
+                account: $SNOWFLAKE_ACCOUNT
+                user: $SNOWFLAKE_USER
+                private_key_path: /tmp/rsa_key.p8
+                role: ACCOUNTADMIN
+                database: MGMT_DB_UAT
+                warehouse: TRANSFORM_WH_UAT
+                schema: COST_GOVERNANCE
+                threads: 4
+          EOF
+
       - name: dbt Build
         run: dbt build --project-dir dbt --profiles-dir dbt --target uat
