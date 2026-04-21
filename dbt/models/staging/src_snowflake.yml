@@ -24,3 +24,6 @@ sources:
 
       - name: access_history
         description: "Tracks which users accessed which columns/tables"
+
+      - name: automatic_clustering_history
+        description: "Credits consumed by automatic reclustering operations"
