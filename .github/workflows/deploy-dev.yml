@@ -23,7 +23,7 @@ jobs:
           python-version: '3.11'
 
       - name: Install tools
-        run: pip install snowflake-cli dbt-snowflake
+        run: pip install snowflake-cli "dbt-snowflake~=1.9.0"
 
       - name: Write private key to file
         run: echo "$SNOWFLAKE_PRIVATE_KEY" > /tmp/rsa_key.p8
