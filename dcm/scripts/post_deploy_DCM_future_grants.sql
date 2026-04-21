@@ -82,6 +82,5 @@ BEGIN
     RETURN 'SUCCESS: Future grants applied for ' || UPPER(ENV) || ' environment.';
 END;
 
--- GRANTS to the prodecure for CI/CD ( to be executed only once then drop the line)
-
-GRANT USAGE ON PROCEDURE {{mgmt_db}}.DCM.SETUP_FUTURE_GRANTS(VARCHAR) TO ROLE DCM_DEPLOYER;
+-- GRANTS to the prodecure for CI/CD ( to be executed only once then per env then drop the line)
+-- GRANT USAGE ON PROCEDURE {{mgmt_db}}.DCM.SETUP_FUTURE_GRANTS(VARCHAR) TO ROLE DCM_DEPLOYER;
