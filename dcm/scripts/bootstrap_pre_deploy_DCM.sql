@@ -80,6 +80,17 @@ BEGIN
             )
             COMMENT = ''Audit log — tracks all user creation, grant changes, and disable actions''
         ';
+
+        -- Step 10: Streamlit stage + app object
+        EXECUTE IMMEDIATE 'CREATE STAGE IF NOT EXISTS MGMT_DB.USER_MANAGEMENT.USER_GRANTS_MANAGER_STAGE COMMENT = ''Stage for User & Grants Manager Streamlit app''';
+        EXECUTE IMMEDIATE '
+            CREATE STREAMLIT IF NOT EXISTS MGMT_DB.USER_MANAGEMENT.USER_GRANTS_MANAGER
+                ROOT_LOCATION = ''@MGMT_DB.USER_MANAGEMENT.USER_GRANTS_MANAGER_STAGE/streamlit/user_grants_manager''
+                MAIN_FILE = ''app.py''
+                QUERY_WAREHOUSE = ''COMPUTE_WH''
+                TITLE = ''User & Grants Manager''
+                COMMENT = ''Streamlit app for user creation, grant management, and audit logging''
+        ';
     END IF;
 
     RETURN 'SUCCESS: DCM setup complete for ' || UPPER(ENV) || ' — project: ' || dcm_project;
