@@ -55,4 +55,4 @@ jobs:
             --connection default
 
       - name: dbt Build
-        run: dbt build --project-dir dbt --target dev
+        run: dbt build --project-dir dbt --profiles-dir dbt --target dev

@@ -54,8 +54,8 @@ jobs:
 
       - name: Post-deploy Future Grants
         run: |
-          snow sql -q "CALL MGMT_DB_DEV.DCM.SETUP_FUTURE_GRANTS('UAT')" \
+          snow sql -q "CALL MGMT_DB_UAT.DCM.SETUP_FUTURE_GRANTS('UAT')" \
             --connection default
 
       - name: dbt Build
-        run: dbt build --project-dir dbt --target uat
+        run: dbt build --project-dir dbt --profiles-dir dbt --target uat
