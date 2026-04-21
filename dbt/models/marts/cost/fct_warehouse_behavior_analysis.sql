@@ -23,8 +23,8 @@ SELECT
     SUM(execution_time_seconds) AS total_execution_time_seconds,
     
     -- Behavior Counters (useful for alerting)
-    SUM(CASE WHEN is_wakeup_query THEN 1 ELSE 0 END) AS wakeup_count,
-    SUM(CASE WHEN is_isolated_query THEN 1 ELSE 0 END) AS isolated_query_count
+    SUM(CASE WHEN is_potential_wakeup THEN 1 ELSE 0 END) AS wakeup_count,
+    SUM(CASE WHEN is_isolated_expensive_query THEN 1 ELSE 0 END) AS isolated_query_count
 
 FROM behavior_base
 GROUP BY
