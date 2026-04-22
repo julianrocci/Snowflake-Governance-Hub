@@ -4,6 +4,7 @@ import json
 
 session = get_active_session()
 
+# -- Domain configuration: prefix used to build role names (e.g. FIN_READER_DEV) --
 DOMAINS = {
     "FINANCE": {"prefix": "FIN", "label": "Finance"},
     "MARKETING": {"prefix": "MKT", "label": "Marketing"},
@@ -13,9 +14,18 @@ DOMAINS = {
     "MANAGEMENT": {"prefix": "MGMT", "label": "Management"},
 }
 
+# -- Environment suffixes appended to role/db names --
 ENVS = {"DEV": "_DEV", "UAT": "_UAT", "PROD": ""}
 
 ALLOWED_ROLES = ("ACCOUNTADMIN", "SECURITYADMIN", "SYSADMIN")
+
+
+# ============================================================
+# Access control & audit logging
+# ============================================================
+
+def section(title):
+    st.markdown(f'<div class="section-divider"><span class="section-divider-title">{title}</span></div>', unsafe_allow_html=True)
 
 
 def check_access():
@@ -45,15 +55,19 @@ def log_action(action_type, target_users, role_used, env, domains_affected, gran
     """).collect()
 
 
+# ============================================================
+# Data helpers
+# ============================================================
+
 @st.cache_data(ttl=60)
 def get_users():
     rows = session.sql("SHOW USERS IN ACCOUNT").collect()
-    return sorted([r["name"] for r in rows])
+    return sorted([r["name"] for r in rows if r["name"] is not None])
 
 
 def get_user_roles(username):
     rows = session.sql(f"SHOW GRANTS TO USER {username}").collect()
-    return [r["role"] for r in rows]
+    return [r["role"] for r in rows if r["role"] is not None]
 
 
 def get_domain_grants(username, env_suffix):
@@ -71,6 +85,10 @@ def get_domain_grants(username, env_suffix):
         grants[domain] = level
     return grants
 
+
+# ============================================================
+# Grant application logic (revoke old, grant new)
+# ============================================================
 
 def apply_domain_grants(username, domain, level, env_suffix, current_level):
     prefix = DOMAINS[domain]["prefix"]
@@ -104,37 +122,66 @@ def apply_domain_grants(username, domain, level, env_suffix, current_level):
         session.sql(f"GRANT ROLE {wh_role} TO USER {username}").collect()
 
 
-def render_domain_checkboxes(key_prefix, current_grants=None):
-    selections = {}
-    cols = st.columns(len(DOMAINS))
-    for i, (domain, info) in enumerate(DOMAINS.items()):
-        with cols[i]:
-            st.markdown(f"**{info['label']}**")
-            current = current_grants.get(domain, "none") if current_grants else "none"
-            select_key = f"{key_prefix}_{domain}_select"
-            all_key = f"{key_prefix}_{domain}_all"
-            if select_key not in st.session_state:
-                st.session_state[select_key] = current in ("select", "all")
-            if all_key not in st.session_state:
-                st.session_state[all_key] = current == "all"
-            sel = st.checkbox("Select", key=select_key)
-            adm = st.checkbox("All", key=all_key)
-            if adm:
-                selections[domain] = "all"
-            elif sel:
-                selections[domain] = "select"
-            else:
-                selections[domain] = "none"
-    return selections
+# ============================================================
+# Shared UI: domain expander with per-env role names + radio
+# ============================================================
 
+def render_domain_expander(domain_key, env_order, col_container=None, default_level="select",
+                           show_roles=True, key_prefix="create", current_grants_by_env=None,
+                           allow_none=False):
+    info = DOMAINS[domain_key]
+    prefix = info["prefix"]
+    container = col_container if col_container else st
+    domain_selections = {}
+    options = ["None", "Reader", "Admin"] if allow_none else ["Reader", "Admin"]
+    level_map = {"None": "none", "Reader": "select", "Admin": "all"}
+    with container.expander(f"{info['label']}", expanded=True):
+        if env_order:
+            env_cols = st.columns(len(env_order))
+            for idx, env_name in enumerate(env_order):
+                suffix = ENVS[env_name]
+                reader_name = f"{prefix}_READER{suffix}"
+                admin_name = f"{prefix}_ADMIN{suffix}"
+                if current_grants_by_env:
+                    current = current_grants_by_env.get(env_name, {}).get(domain_key, "none")
+                    if allow_none:
+                        radio_index = {"none": 0, "select": 1, "all": 2}.get(current, 0)
+                    else:
+                        radio_index = 0 if current == "select" else 1
+                else:
+                    if allow_none:
+                        radio_index = 0
+                    else:
+                        radio_index = 0 if default_level == "select" else 1
+                with env_cols[idx]:
+                    st.markdown(f"**{env_name}**")
+                    if show_roles:
+                        st.caption(f"`{reader_name}`")
+                        st.caption(f"`{admin_name}`")
+                    level = st.radio(
+                        f"{env_name}",
+                        options=options,
+                        index=radio_index,
+                        key=f"{key_prefix}_{domain_key}_{env_name}_level",
+                        horizontal=False,
+                        label_visibility="collapsed"
+                    )
+                    domain_selections[env_name] = level_map[level]
+        else:
+            st.info("Select at least one environment above.")
+    return domain_selections
+
+
+# ============================================================
+# Page: Create Users
+# ============================================================
 
 def page_create():
-    st.header("Create Users")
     st.markdown("Enter one or more usernames separated by commas.")
 
     usernames_input = st.text_input("Usernames", placeholder="USER1, USER2, USER3")
 
-    st.subheader("Environments")
+    section("Environments")
     env_cols = st.columns(3)
     selected_envs = []
     with env_cols[0]:
@@ -147,7 +194,7 @@ def page_create():
         if st.checkbox("PROD", key="env_prod"):
             selected_envs.append("PROD")
 
-    st.subheader("Domain Access")
+    section("Domain Access")
     st.caption("*Warehouse usage role for each selected domain is automatically granted.*")
     domain_labels = ["All Domains"] + [info["label"] for info in DOMAINS.values()]
     selected_domains = st.multiselect("Select domains", options=domain_labels)
@@ -161,39 +208,6 @@ def page_create():
     selections = {}
     env_order = [e for e in ["DEV", "UAT", "PROD"] if e in selected_envs]
 
-    def render_domain_expander_multi_env(domain_key, col_container=None, default_level="select", show_roles=True):
-        info = DOMAINS[domain_key]
-        prefix = info["prefix"]
-        container = col_container if col_container else st
-        domain_selections = {}
-        with container.expander(f"Access for {info['label']}", expanded=True):
-            if env_order:
-                env_cols = st.columns(len(env_order))
-                for idx, env_name in enumerate(env_order):
-                    suffix = ENVS[env_name]
-                    reader_name = f"{prefix}_READER{suffix}"
-                    admin_name = f"{prefix}_ADMIN{suffix}"
-                    with env_cols[idx]:
-                        st.markdown(f"**{env_name}**")
-                        if show_roles:
-                            st.caption(f"`{reader_name}`")
-                            st.caption(f"`{admin_name}`")
-                        else:
-                            st.write("")
-                            st.write("")
-                        level = st.radio(
-                            f"{env_name}",
-                            options=["Reader", "Admin"],
-                            index=0 if default_level == "select" else 1,
-                            key=f"create_{domain_key}_{env_name}_level",
-                            horizontal=True,
-                            label_visibility="collapsed"
-                        )
-                        domain_selections[env_name] = "select" if level == "Reader" else "all"
-            else:
-                st.info("Select at least one environment above.")
-        return domain_selections
-
     if all_domains_selected and env_order:
         bulk_level = st.radio(
             "Access for All Domains",
@@ -203,11 +217,12 @@ def page_create():
         )
         bulk = "select" if "Reader" in bulk_level else "all"
 
-        domain_pairs = [list(DOMAINS.keys())[i:i+2] for i in range(0, len(DOMAINS), 2)]
+        domain_pairs = [active_domains[i:i+2] for i in range(0, len(active_domains), 2)]
         for pair in domain_pairs:
             cols = st.columns(2)
             for idx, domain_key in enumerate(pair):
-                domain_sels = render_domain_expander_multi_env(domain_key, cols[idx], default_level=bulk, show_roles=True)
+                domain_sels = render_domain_expander(domain_key, env_order, cols[idx],
+                                                     default_level=bulk, show_roles=True, key_prefix="create")
                 for env_name, level in domain_sels.items():
                     if env_name not in selections:
                         selections[env_name] = {}
@@ -217,7 +232,8 @@ def page_create():
         for pair in domain_pairs:
             cols = st.columns(2)
             for idx, domain_key in enumerate(pair):
-                domain_sels = render_domain_expander_multi_env(domain_key, cols[idx])
+                domain_sels = render_domain_expander(domain_key, env_order, cols[idx],
+                                                     show_roles=True, key_prefix="create")
                 for env_name, level in domain_sels.items():
                     if env_name not in selections:
                         selections[env_name] = {}
@@ -230,6 +246,7 @@ def page_create():
             if domain_key not in selections[env_name]:
                 selections[env_name][domain_key] = "none"
 
+    # -- Execute user creation and grant assignment --
     if st.button("Create Users", type="primary"):
         if not usernames_input.strip():
             st.error("Please enter at least one username.")
@@ -296,173 +313,153 @@ def page_create():
                 st.error(err)
 
 
+# ============================================================
+# Page: Manage Users — shows only domains where user has access
+# ============================================================
+
 def page_manage():
-    st.header("Manage Existing Users")
-
-    def reset_checkboxes():
-        for key in list(st.session_state.keys()):
-            if key.startswith("manage_") and (key.endswith("_select") or key.endswith("_all")):
-                st.session_state[key] = False
-
     all_users = get_users()
     selected_user = st.selectbox("Search user", options=[""] + all_users, index=0)
 
     if not selected_user:
-        st.info("Select a user to view and manage their access.")
         return
 
-    st.subheader("Environment")
-    env_choice = st.radio("Select environment", options=["DEV", "UAT", "PROD"], horizontal=True, key="manage_env")
-    env_suffix = ENVS[env_choice]
+    section("Environments")
+    env_cols = st.columns(3)
+    selected_envs = []
+    with env_cols[0]:
+        if st.checkbox("DEV", key="manage_env_dev", value=True):
+            selected_envs.append("DEV")
+    with env_cols[1]:
+        if st.checkbox("UAT", key="manage_env_uat", value=True):
+            selected_envs.append("UAT")
+    with env_cols[2]:
+        if st.checkbox("PROD", key="manage_env_prod", value=True):
+            selected_envs.append("PROD")
 
-    current_grants = get_domain_grants(selected_user, env_suffix)
-    all_roles = get_user_roles(selected_user)
+    env_order = [e for e in ["DEV", "UAT", "PROD"] if e in selected_envs]
 
-    st.divider()
+    current_grants_by_env = {}
+    for env_name in env_order:
+        current_grants_by_env[env_name] = get_domain_grants(selected_user, ENVS[env_name])
 
-    col_info, col_grants = st.columns([1, 2])
+    active_domains = []
+    for domain_key in DOMAINS:
+        for env_name in env_order:
+            if current_grants_by_env.get(env_name, {}).get(domain_key, "none") != "none":
+                active_domains.append(domain_key)
+                break
 
-    with col_info:
-        st.subheader("Current Roles")
-        if all_roles:
-            for r in sorted(all_roles):
-                st.code(r)
-        else:
-            st.info("No roles assigned.")
-
-    with col_grants:
-        st.subheader(f"Manage Domain Access ({env_choice})")
-
-        active_domains = [d for d, l in current_grants.items() if l != "none"]
-        if active_domains:
-            labels = [f"{DOMAINS[d]['label']} ({'Admin' if current_grants[d] == 'all' else 'Reader'})" for d in active_domains]
-            st.caption(f"Current access: {', '.join(labels)}")
-        else:
-            st.caption("No domain access configured.")
-
-        domain_pairs = [list(DOMAINS.keys())[i:i+2] for i in range(0, len(DOMAINS), 2)]
-        new_selections = {}
+    # -- Current Roles: read-only view of existing access per domain/env --
+    if active_domains and env_order:
+        section("Current Roles")
+        domain_pairs = [active_domains[i:i+2] for i in range(0, len(active_domains), 2)]
         for pair in domain_pairs:
             cols = st.columns(2)
             for idx, domain_key in enumerate(pair):
                 info = DOMAINS[domain_key]
                 prefix = info["prefix"]
-                current = current_grants.get(domain_key, "none")
-                reader_name = f"{prefix}_READER{env_suffix}"
-                admin_name = f"{prefix}_ADMIN{env_suffix}"
                 with cols[idx]:
                     with st.expander(f"{info['label']}", expanded=True):
-                        st.caption(f"`{reader_name}`")
-                        st.caption(f"`{admin_name}`")
-                        level = st.radio(
-                            f"{domain_key}",
-                            options=["No Access", "Reader", "Admin"],
-                            index={"none": 0, "select": 1, "all": 2}.get(current, 0),
-                            key=f"manage_{selected_user}_{env_choice}_{domain_key}_level",
-                            horizontal=True,
-                            label_visibility="collapsed"
-                        )
-                        new_selections[domain_key] = {"No Access": "none", "Reader": "select", "Admin": "all"}[level]
+                        ecols = st.columns(len(env_order))
+                        for eidx, env_name in enumerate(env_order):
+                            suffix = ENVS[env_name]
+                            current = current_grants_by_env.get(env_name, {}).get(domain_key, "none")
+                            with ecols[eidx]:
+                                st.markdown(f"**{env_name}**")
+                                if current == "all":
+                                    st.checkbox("Admin", value=True, disabled=True, key=f"cur_{selected_user}_{domain_key}_{env_name}_admin")
+                                elif current == "select":
+                                    st.checkbox("Reader", value=True, disabled=True, key=f"cur_{selected_user}_{domain_key}_{env_name}_reader")
+                                else:
+                                    st.caption("—")
+    elif env_order:
+        st.info(f"**{selected_user}** has no domain access in the selected environments.")
 
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("Apply Changes", type="primary"):
-                role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
+    # -- Domain Access: same UI as Create Users to add/modify grants --
+    section("Domain Access")
+    st.caption("*Select domains and access levels to grant.*")
+    domain_labels = ["All Domains"] + [info["label"] for info in DOMAINS.values()]
+    selected_domains = st.multiselect("Select domains", options=domain_labels, key="manage_domains")
+
+    all_domains_selected = "All Domains" in selected_domains
+    if all_domains_selected:
+        modify_domains = list(DOMAINS.keys())
+    else:
+        modify_domains = [k for k, v in DOMAINS.items() if v["label"] in selected_domains]
+
+    new_selections = {}
+
+    if all_domains_selected and env_order:
+        bulk_level = st.radio(
+            "Access for All Domains",
+            options=["Reader (Select)", "Admin (Full Access)"],
+            key="manage_all_domains_level",
+            horizontal=True
+        )
+        bulk = "select" if "Reader" in bulk_level else "all"
+
+        domain_pairs = [modify_domains[i:i+2] for i in range(0, len(modify_domains), 2)]
+        for pair in domain_pairs:
+            cols = st.columns(2)
+            for idx, domain_key in enumerate(pair):
+                domain_sels = render_domain_expander(domain_key, env_order, cols[idx],
+                                                     default_level=bulk, show_roles=True,
+                                                     key_prefix=f"manage_{selected_user}",
+                                                     current_grants_by_env=current_grants_by_env,
+                                                     allow_none=True)
+                for env_name, level in domain_sels.items():
+                    if env_name not in new_selections:
+                        new_selections[env_name] = {}
+                    new_selections[env_name][domain_key] = level
+    elif modify_domains and env_order:
+        domain_pairs = [modify_domains[i:i+2] for i in range(0, len(modify_domains), 2)]
+        for pair in domain_pairs:
+            cols = st.columns(2)
+            for idx, domain_key in enumerate(pair):
+                domain_sels = render_domain_expander(domain_key, env_order, cols[idx],
+                                                     show_roles=True,
+                                                     key_prefix=f"manage_{selected_user}",
+                                                     current_grants_by_env=current_grants_by_env,
+                                                     allow_none=True)
+                for env_name, level in domain_sels.items():
+                    if env_name not in new_selections:
+                        new_selections[env_name] = {}
+                    new_selections[env_name][domain_key] = level
+
+    # -- Apply changes --
+    if new_selections and env_order:
+        if st.button("Apply Changes", type="primary"):
+            role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
+            any_change = False
+            for env_name in env_order:
+                env_suffix = ENVS[env_name]
+                current_grants = current_grants_by_env.get(env_name, get_domain_grants(selected_user, env_suffix))
                 changes = {}
-                for domain in DOMAINS:
+                for domain in modify_domains:
                     old = current_grants.get(domain, "none")
-                    new = new_selections[domain]
+                    new = new_selections.get(env_name, {}).get(domain, old)
                     if old != new:
                         apply_domain_grants(selected_user, domain, new, env_suffix, old)
                         changes[domain] = {"from": old, "to": new, "wh_role": f"{DOMAINS[domain]['prefix']}_WH{env_suffix}_USER"}
 
                 if changes:
-                    has_any_grant = any(v != "none" for v in new_selections.values())
-                    action_type = "DISABLE_USER" if not has_any_grant else "UPDATE_GRANTS"
-                    domains_affected = list(changes.keys())
+                    any_change = True
+                    log_action("UPDATE_GRANTS", [selected_user], role_used, env_name, list(changes.keys()), changes,
+                               f"Updated grants for {selected_user} in {env_name}")
 
-                    log_action(action_type, [selected_user], role_used, env_choice, domains_affected, changes,
-                               f"{'Disabled' if not has_any_grant else 'Updated grants for'} {selected_user} in {env_choice}")
-
-                    if not has_any_grant:
-                        st.warning(f"{selected_user} has no more access in {env_choice} — marked as disabled.")
-                    else:
-                        st.success(f"Access updated for {selected_user} in {env_choice}")
-
-                    st.experimental_rerun()
-                else:
-                    st.info("No changes detected.")
-
-        with col2:
-            st.button("Reset", on_click=reset_checkboxes)
+            if any_change:
+                st.success(f"Access updated for {selected_user}")
+                st.experimental_rerun()
+            else:
+                st.info("No changes detected.")
 
 
-st.set_page_config(page_title="User & Grants Manager", layout="wide")
-
-
-def inject_banner_css():
-    st.markdown("""
-    <style>
-        .app-header {
-            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
-            padding: 1.5rem 2rem;
-            border-radius: 12px;
-            margin-bottom: 1.5rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .app-header-left { display: flex; align-items: center; gap: 1rem; }
-        .app-header-icon {
-            width: 48px; height: 48px;
-            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
-            border-radius: 12px;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
-        }
-        .app-header-title { color: #F8FAFC; font-size: 1.5rem; font-weight: 700; margin: 0; }
-        .app-header-sub { color: #94A3B8; font-size: 0.85rem; margin: 0; }
-        .header-badge {
-            padding: 0.35rem 0.75rem;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: 600;
-        }
-        .badge-role { background: rgba(59,130,246,0.15); color: #60A5FA; border: 1px solid rgba(59,130,246,0.3); }
-        .badge-user { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.3); }
-        .stat-card {
-            background: #FFFFFF;
-            border: 1px solid #E2E8F0;
-            border-radius: 12px;
-            padding: 1.25rem;
-            text-align: center;
-        }
-        .stat-value { font-size: 2rem; font-weight: 700; color: #0F172A; }
-        .stat-label { font-size: 0.8rem; color: #64748B; font-weight: 500; margin-top: 0.25rem; }
-    </style>
-    """, unsafe_allow_html=True)
-
-
-def render_header(current_role, current_user):
-    st.markdown(f"""
-    <div class="app-header">
-        <div class="app-header-left">
-            <div class="app-header-icon">&#x1f512;</div>
-            <div>
-                <div class="app-header-title">User & Grants Manager</div>
-                <div class="app-header-sub">Identity & Access Governance Console</div>
-            </div>
-        </div>
-        <div style="display:flex;gap:0.5rem;align-items:center;">
-            <span class="header-badge badge-user">&#x1f464; {current_user}</span>
-            <span class="header-badge badge-role">&#x1f511; {current_role}</span>
-        </div>
-    </div>
-    """, unsafe_allow_html=True)
-
+# ============================================================
+# Page: Audit Trail — filterable log of all actions
+# ============================================================
 
 def page_audit():
-    st.header("Audit Trail")
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
         action_filter = st.selectbox("Action Type", ["All", "CREATE_USER", "UPDATE_GRANTS", "DISABLE_USER"], key="audit_action")
@@ -504,12 +501,94 @@ def page_audit():
         st.warning(f"Could not load audit log: {str(e)}")
 
 
-inject_banner_css()
+# ============================================================
+# Banner CSS + header
+# ============================================================
+
+st.set_page_config(page_title="User & Grants Manager", layout="wide")
+
+st.markdown("""
+<style>
+    .app-header {
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    .app-header-left { display: flex; align-items: center; gap: 1rem; }
+    .app-header-icon {
+        width: 48px; height: 48px;
+        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 22px;
+    }
+    .app-header-title { color: #F8FAFC; font-size: 1.5rem; font-weight: 700; margin: 0; }
+    .app-header-sub { color: #94A3B8; font-size: 0.85rem; margin: 0; }
+    .header-badge {
+        padding: 0.35rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    .badge-role { background: rgba(59,130,246,0.15); color: #60A5FA; border: 1px solid rgba(59,130,246,0.3); }
+    .badge-user { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.3); }
+    .stat-card {
+        background: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 12px;
+        padding: 1.25rem;
+        text-align: center;
+    }
+    .stat-value { font-size: 2rem; font-weight: 700; color: #0F172A; }
+    .stat-label { font-size: 0.8rem; color: #64748B; font-weight: 500; margin-top: 0.25rem; }
+
+    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { display: none !important; }
+
+    .section-divider {
+        border-top: 2px solid #E2E8F0;
+        padding-top: 1rem;
+        margin-top: 1.5rem;
+    }
+    .section-divider-title {
+        color: #1E293B;
+        font-size: 0.85rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin: 0 0 0.5rem 0;
+    }
+
+    div[data-testid="stTabs"] button {
+        font-size: 1.1rem !important;
+        font-weight: 700 !important;
+        padding: 0.75rem 2rem !important;
+        letter-spacing: 0.3px;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 current_role = check_access()
 current_user = session.sql("SELECT CURRENT_USER()").collect()[0][0]
 
-render_header(current_role, current_user)
+st.markdown(f"""
+<div class="app-header">
+    <div class="app-header-left">
+        <div class="app-header-icon">&#x1f512;</div>
+        <div>
+            <div class="app-header-title">User & Grants Manager</div>
+            <div class="app-header-sub">Identity & Access Governance Console</div>
+        </div>
+    </div>
+    <div style="display:flex;gap:0.5rem;align-items:center;">
+        <span class="header-badge badge-user">&#x1f464; {current_user}</span>
+        <span class="header-badge badge-role">&#x1f511; {current_role}</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 tab1, tab2, tab3 = st.tabs(["Create Users", "Manage Users", "Audit Trail"])
 
