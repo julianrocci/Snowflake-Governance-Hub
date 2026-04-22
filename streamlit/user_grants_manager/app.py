@@ -207,7 +207,7 @@ def page_create():
         for pair in domain_pairs:
             cols = st.columns(2)
             for idx, domain_key in enumerate(pair):
-                domain_sels = render_domain_expander_multi_env(domain_key, cols[idx], default_level=bulk, show_roles=False)
+                domain_sels = render_domain_expander_multi_env(domain_key, cols[idx], default_level=bulk, show_roles=True)
                 for env_name, level in domain_sels.items():
                     if env_name not in selections:
                         selections[env_name] = {}
@@ -340,7 +340,29 @@ def page_manage():
         else:
             st.caption("No domain access configured.")
 
-        new_selections = render_domain_checkboxes(f"manage_{selected_user}_{env_choice}", current_grants)
+        domain_pairs = [list(DOMAINS.keys())[i:i+2] for i in range(0, len(DOMAINS), 2)]
+        new_selections = {}
+        for pair in domain_pairs:
+            cols = st.columns(2)
+            for idx, domain_key in enumerate(pair):
+                info = DOMAINS[domain_key]
+                prefix = info["prefix"]
+                current = current_grants.get(domain_key, "none")
+                reader_name = f"{prefix}_READER{env_suffix}"
+                admin_name = f"{prefix}_ADMIN{env_suffix}"
+                with cols[idx]:
+                    with st.expander(f"{info['label']}", expanded=True):
+                        st.caption(f"`{reader_name}`")
+                        st.caption(f"`{admin_name}`")
+                        level = st.radio(
+                            f"{domain_key}",
+                            options=["No Access", "Reader", "Admin"],
+                            index={"none": 0, "select": 1, "all": 2}.get(current, 0),
+                            key=f"manage_{selected_user}_{env_choice}_{domain_key}_level",
+                            horizontal=True,
+                            label_visibility="collapsed"
+                        )
+                        new_selections[domain_key] = {"No Access": "none", "Reader": "select", "Admin": "all"}[level]
 
         col1, col2 = st.columns(2)
         with col1:
@@ -376,14 +398,124 @@ def page_manage():
 
 
 st.set_page_config(page_title="User & Grants Manager", layout="wide")
-st.title("User & Grants Manager")
+
+
+def inject_banner_css():
+    st.markdown("""
+    <style>
+        .app-header {
+            background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .app-header-left { display: flex; align-items: center; gap: 1rem; }
+        .app-header-icon {
+            width: 48px; height: 48px;
+            background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .app-header-title { color: #F8FAFC; font-size: 1.5rem; font-weight: 700; margin: 0; }
+        .app-header-sub { color: #94A3B8; font-size: 0.85rem; margin: 0; }
+        .header-badge {
+            padding: 0.35rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .badge-role { background: rgba(59,130,246,0.15); color: #60A5FA; border: 1px solid rgba(59,130,246,0.3); }
+        .badge-user { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.3); }
+        .stat-card {
+            background: #FFFFFF;
+            border: 1px solid #E2E8F0;
+            border-radius: 12px;
+            padding: 1.25rem;
+            text-align: center;
+        }
+        .stat-value { font-size: 2rem; font-weight: 700; color: #0F172A; }
+        .stat-label { font-size: 0.8rem; color: #64748B; font-weight: 500; margin-top: 0.25rem; }
+    </style>
+    """, unsafe_allow_html=True)
+
+
+def render_header(current_role, current_user):
+    st.markdown(f"""
+    <div class="app-header">
+        <div class="app-header-left">
+            <div class="app-header-icon">&#x1f512;</div>
+            <div>
+                <div class="app-header-title">User & Grants Manager</div>
+                <div class="app-header-sub">Identity & Access Governance Console</div>
+            </div>
+        </div>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+            <span class="header-badge badge-user">&#x1f464; {current_user}</span>
+            <span class="header-badge badge-role">&#x1f511; {current_role}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+def page_audit():
+    st.header("Audit Trail")
+    col_f1, col_f2, col_f3 = st.columns(3)
+    with col_f1:
+        action_filter = st.selectbox("Action Type", ["All", "CREATE_USER", "UPDATE_GRANTS", "DISABLE_USER"], key="audit_action")
+    with col_f2:
+        env_filter = st.selectbox("Environment", ["All", "DEV", "UAT", "PROD"], key="audit_env")
+    with col_f3:
+        limit = st.selectbox("Show last", [25, 50, 100, 250], key="audit_limit")
+
+    where_clauses = []
+    if action_filter != "All":
+        where_clauses.append(f"ACTION_TYPE = '{action_filter}'")
+    if env_filter != "All":
+        where_clauses.append(f"ENV = '{env_filter}'")
+    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+
+    try:
+        df = session.sql(f"""
+            SELECT ACTION_TIMESTAMP, ACTION_TYPE, TARGET_USERS, PERFORMED_BY, ROLE_USED, ENV, DOMAINS_AFFECTED, COMMENT
+            FROM MGMT_DB.USER_MANAGEMENT.USER_ACTIVITY_LOG
+            {where_sql}
+            ORDER BY ACTION_TIMESTAMP DESC
+            LIMIT {limit}
+        """).to_pandas()
+
+        if df.empty:
+            st.info("No audit entries found.")
+        else:
+            stats = st.columns(4)
+            with stats[0]:
+                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df)}</div><div class="stat-label">Actions shown</div></div>', unsafe_allow_html=True)
+            with stats[1]:
+                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df[df["ACTION_TYPE"] == "CREATE_USER"])}</div><div class="stat-label">Users Created</div></div>', unsafe_allow_html=True)
+            with stats[2]:
+                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df[df["ACTION_TYPE"] == "UPDATE_GRANTS"])}</div><div class="stat-label">Grants Updated</div></div>', unsafe_allow_html=True)
+            with stats[3]:
+                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df[df["ACTION_TYPE"] == "DISABLE_USER"])}</div><div class="stat-label">Users Disabled</div></div>', unsafe_allow_html=True)
+            st.dataframe(df, use_container_width=True, hide_index=True)
+    except Exception as e:
+        st.warning(f"Could not load audit log: {str(e)}")
+
+
+inject_banner_css()
 
 current_role = check_access()
-st.caption(f"Logged in as **{session.sql('SELECT CURRENT_USER()').collect()[0][0]}** | Role: **{current_role}**")
+current_user = session.sql("SELECT CURRENT_USER()").collect()[0][0]
 
-tab1, tab2 = st.tabs(["Create Users", "Manage Users"])
+render_header(current_role, current_user)
+
+tab1, tab2, tab3 = st.tabs(["Create Users", "Manage Users", "Audit Trail"])
 
 with tab1:
     page_create()
 with tab2:
     page_manage()
+with tab3:
+    page_audit()
