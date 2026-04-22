@@ -13,48 +13,42 @@ DOMAINS = {
     "MANAGEMENT": {"prefix": "MGMT", "label": "Management"},
 }
 
+ENVS = {"DEV": "_DEV", "UAT": "_UAT", "PROD": ""}
+
 ALLOWED_ROLES = ("ACCOUNTADMIN", "SECURITYADMIN", "SYSADMIN")
 
 
 def check_access():
     role = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
     if role not in ALLOWED_ROLES:
-        st.error(f"Accès refusé. Rôle actuel : **{role}**. Seuls {', '.join(ALLOWED_ROLES)} peuvent accéder à cette application.")
+        st.error(f"Access denied. Current role: **{role}**. Only {', '.join(ALLOWED_ROLES)} can access this application.")
         st.stop()
     return role
 
 
-def get_env_suffix():
-    db = session.sql("SELECT CURRENT_DATABASE()").collect()[0][0]
-    if db.endswith("_DEV"):
-        return "_DEV"
-    elif db.endswith("_UAT"):
-        return "_UAT"
-    else:
-        return ""
-
-
-def log_action(action_type, target_users, role_used, domains_affected, grants_detail, comment=""):
+def log_action(action_type, target_users, role_used, env, domains_affected, grants_detail, comment=""):
     users_arr = ", ".join([f"'{u}'" for u in target_users])
     domains_arr = ", ".join([f"'{d}'" for d in domains_affected]) if domains_affected else ""
     grants_json = json.dumps(grants_detail) if grants_detail else "{}"
     session.sql(f"""
         INSERT INTO MGMT_DB.USER_MANAGEMENT.USER_ACTIVITY_LOG 
-        (ACTION_TYPE, TARGET_USERS, PERFORMED_BY, ROLE_USED, DOMAINS_AFFECTED, GRANTS_DETAIL, COMMENT)
+        (ACTION_TYPE, TARGET_USERS, PERFORMED_BY, ROLE_USED, ENV, DOMAINS_AFFECTED, GRANTS_DETAIL, COMMENT)
         SELECT 
             '{action_type}',
             ARRAY_CONSTRUCT({users_arr}),
             CURRENT_USER(),
             '{role_used}',
+            '{env}',
             ARRAY_CONSTRUCT({domains_arr}),
             PARSE_JSON('{grants_json}'),
             '{comment}'
     """).collect()
 
 
+@st.cache_data(ttl=60)
 def get_users():
     rows = session.sql("SHOW USERS IN ACCOUNT").collect()
-    return [r["name"] for r in rows]
+    return sorted([r["name"] for r in rows])
 
 
 def get_user_roles(username):
@@ -117,10 +111,14 @@ def render_domain_checkboxes(key_prefix, current_grants=None):
         with cols[i]:
             st.markdown(f"**{info['label']}**")
             current = current_grants.get(domain, "none") if current_grants else "none"
-            select_val = current in ("select", "all")
-            all_val = current == "all"
-            sel = st.checkbox("Select", value=select_val, key=f"{key_prefix}_{domain}_select")
-            adm = st.checkbox("All", value=all_val, key=f"{key_prefix}_{domain}_all")
+            select_key = f"{key_prefix}_{domain}_select"
+            all_key = f"{key_prefix}_{domain}_all"
+            if select_key not in st.session_state:
+                st.session_state[select_key] = current in ("select", "all")
+            if all_key not in st.session_state:
+                st.session_state[all_key] = current == "all"
+            sel = st.checkbox("Select", key=select_key)
+            adm = st.checkbox("All", key=all_key)
             if adm:
                 selections[domain] = "all"
             elif sel:
@@ -131,90 +129,222 @@ def render_domain_checkboxes(key_prefix, current_grants=None):
 
 
 def page_create():
-    st.header("Créer des utilisateurs")
-    st.markdown("Saisissez un ou plusieurs noms d'utilisateur séparés par des virgules.")
+    st.header("Create Users")
+    st.markdown("Enter one or more usernames separated by commas.")
 
-    usernames_input = st.text_input("Noms d'utilisateur", placeholder="USER1, USER2, USER3")
-    default_role = st.selectbox("Rôle par défaut", ["PUBLIC", "FIN_READER", "MKT_READER"], index=0)
+    usernames_input = st.text_input("Usernames", placeholder="USER1, USER2, USER3")
 
-    st.subheader("Droits par domaine")
-    selections = render_domain_checkboxes("create")
+    st.subheader("Environments")
+    env_cols = st.columns(3)
+    selected_envs = []
+    with env_cols[0]:
+        if st.checkbox("DEV", key="env_dev"):
+            selected_envs.append("DEV")
+    with env_cols[1]:
+        if st.checkbox("UAT", key="env_uat"):
+            selected_envs.append("UAT")
+    with env_cols[2]:
+        if st.checkbox("PROD", key="env_prod"):
+            selected_envs.append("PROD")
 
-    if st.button("Créer les utilisateurs", type="primary"):
+    st.subheader("Domain Access")
+    st.caption("*Warehouse usage role for each selected domain is automatically granted.*")
+    domain_labels = ["All Domains"] + [info["label"] for info in DOMAINS.values()]
+    selected_domains = st.multiselect("Select domains", options=domain_labels)
+
+    all_domains_selected = "All Domains" in selected_domains
+    if all_domains_selected:
+        active_domains = list(DOMAINS.keys())
+    else:
+        active_domains = [k for k, v in DOMAINS.items() if v["label"] in selected_domains]
+
+    selections = {}
+    env_order = [e for e in ["DEV", "UAT", "PROD"] if e in selected_envs]
+
+    def render_domain_expander_multi_env(domain_key, col_container=None, default_level="select", show_roles=True):
+        info = DOMAINS[domain_key]
+        prefix = info["prefix"]
+        container = col_container if col_container else st
+        domain_selections = {}
+        with container.expander(f"Access for {info['label']}", expanded=True):
+            if env_order:
+                env_cols = st.columns(len(env_order))
+                for idx, env_name in enumerate(env_order):
+                    suffix = ENVS[env_name]
+                    reader_name = f"{prefix}_READER{suffix}"
+                    admin_name = f"{prefix}_ADMIN{suffix}"
+                    with env_cols[idx]:
+                        st.markdown(f"**{env_name}**")
+                        if show_roles:
+                            st.caption(f"`{reader_name}`")
+                            st.caption(f"`{admin_name}`")
+                        else:
+                            st.write("")
+                            st.write("")
+                        level = st.radio(
+                            f"{env_name}",
+                            options=["Reader", "Admin"],
+                            index=0 if default_level == "select" else 1,
+                            key=f"create_{domain_key}_{env_name}_level",
+                            horizontal=True,
+                            label_visibility="collapsed"
+                        )
+                        domain_selections[env_name] = "select" if level == "Reader" else "all"
+            else:
+                st.info("Select at least one environment above.")
+        return domain_selections
+
+    if all_domains_selected and env_order:
+        bulk_level = st.radio(
+            "Access for All Domains",
+            options=["Reader (Select)", "Admin (Full Access)"],
+            key="create_all_domains_level",
+            horizontal=True
+        )
+        bulk = "select" if "Reader" in bulk_level else "all"
+
+        domain_pairs = [list(DOMAINS.keys())[i:i+2] for i in range(0, len(DOMAINS), 2)]
+        for pair in domain_pairs:
+            cols = st.columns(2)
+            for idx, domain_key in enumerate(pair):
+                domain_sels = render_domain_expander_multi_env(domain_key, cols[idx], default_level=bulk, show_roles=False)
+                for env_name, level in domain_sels.items():
+                    if env_name not in selections:
+                        selections[env_name] = {}
+                    selections[env_name][domain_key] = level
+    elif env_order:
+        domain_pairs = [active_domains[i:i+2] for i in range(0, len(active_domains), 2)]
+        for pair in domain_pairs:
+            cols = st.columns(2)
+            for idx, domain_key in enumerate(pair):
+                domain_sels = render_domain_expander_multi_env(domain_key, cols[idx])
+                for env_name, level in domain_sels.items():
+                    if env_name not in selections:
+                        selections[env_name] = {}
+                    selections[env_name][domain_key] = level
+
+    for env_name in env_order:
+        if env_name not in selections:
+            selections[env_name] = {}
+        for domain_key in DOMAINS:
+            if domain_key not in selections[env_name]:
+                selections[env_name][domain_key] = "none"
+
+    if st.button("Create Users", type="primary"):
         if not usernames_input.strip():
-            st.error("Veuillez saisir au moins un nom d'utilisateur.")
+            st.error("Please enter at least one username.")
+            return
+        if not selected_envs:
+            st.error("Please select at least one environment.")
             return
 
         usernames = [u.strip().upper() for u in usernames_input.split(",") if u.strip()]
-        env_suffix = get_env_suffix()
         role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
 
         progress = st.progress(0)
-        created = []
-        errors = []
+        total_ops = len(usernames) * len(env_order)
+        op_count = 0
+        all_created = []
+        all_errors = []
 
-        for idx, username in enumerate(usernames):
-            try:
-                session.sql(f"CREATE USER IF NOT EXISTS {username} DEFAULT_ROLE = '{default_role}' MUST_CHANGE_PASSWORD = TRUE PASSWORD = 'TempPass123!'").collect()
+        for env_name in env_order:
+            env_suffix = ENVS[env_name]
+            env_selections = selections.get(env_name, {})
+            created = []
+            errors = []
 
-                for domain, level in selections.items():
-                    if level != "none":
-                        apply_domain_grants(username, domain, level, env_suffix, "none")
+            for username in usernames:
+                try:
+                    session.sql(f"CREATE USER IF NOT EXISTS {username} MUST_CHANGE_PASSWORD = TRUE PASSWORD = 'TempPass123!'").collect()
 
-                created.append(username)
-            except Exception as e:
-                errors.append(f"{username}: {str(e)}")
+                    for domain, level in env_selections.items():
+                        if level != "none":
+                            apply_domain_grants(username, domain, level, env_suffix, "none")
 
-            progress.progress((idx + 1) / len(usernames))
+                    created.append(username)
+                except Exception as e:
+                    errors.append(f"{username}: {str(e)}")
 
-        domains_affected = [d for d, l in selections.items() if l != "none"]
-        grants_detail = {d: l for d, l in selections.items() if l != "none"}
+                op_count += 1
+                progress.progress(op_count / total_ops)
 
-        if created:
-            log_action("CREATE_USER", created, role_used, domains_affected, grants_detail,
-                       f"Created {len(created)} user(s) with domain grants")
-            st.success(f"✅ {len(created)} utilisateur(s) créé(s) : {', '.join(created)}")
+            domains_affected = [d for d, l in env_selections.items() if l != "none"]
+            grants_detail = {}
+            for d, l in env_selections.items():
+                if l != "none":
+                    prefix = DOMAINS[d]["prefix"]
+                    wh_role = f"{prefix}_WH{env_suffix}_USER"
+                    role_name = f"{prefix}_READER{env_suffix}" if l == "select" else f"{prefix}_ADMIN{env_suffix}"
+                    grants_detail[d] = {"level": l, "role": role_name, "wh_role": wh_role}
 
-        if errors:
-            for err in errors:
+            if created:
+                log_action("CREATE_USER", created, role_used, env_name, domains_affected, grants_detail,
+                           f"Created {len(created)} user(s) in {env_name}")
+                all_created.extend([(u, env_name) for u in created])
+
+            all_errors.extend(errors)
+
+        get_users.clear()
+
+        if all_created:
+            env_summary = ", ".join(env_order)
+            user_list = ", ".join(sorted(set(u for u, _ in all_created)))
+            st.success(f"{len(set(u for u, _ in all_created))} user(s) created in [{env_summary}]: {user_list}")
+
+        if all_errors:
+            for err in all_errors:
                 st.error(err)
 
 
 def page_manage():
-    st.header("Gérer les utilisateurs")
+    st.header("Manage Existing Users")
+
+    def reset_checkboxes():
+        for key in list(st.session_state.keys()):
+            if key.startswith("manage_") and (key.endswith("_select") or key.endswith("_all")):
+                st.session_state[key] = False
 
     all_users = get_users()
-    search = st.text_input("Rechercher un utilisateur", placeholder="Commencez à taper...")
+    selected_user = st.selectbox("Search user", options=[""] + all_users, index=0)
 
-    if search:
-        filtered = [u for u in all_users if search.upper() in u.upper()]
-    else:
-        filtered = all_users
-
-    if not filtered:
-        st.info("Aucun utilisateur trouvé.")
+    if not selected_user:
+        st.info("Select a user to view and manage their access.")
         return
 
-    selected_user = st.selectbox("Sélectionner un utilisateur", filtered)
+    st.subheader("Environment")
+    env_choice = st.radio("Select environment", options=["DEV", "UAT", "PROD"], horizontal=True, key="manage_env")
+    env_suffix = ENVS[env_choice]
 
-    if selected_user:
-        env_suffix = get_env_suffix()
-        current_grants = get_domain_grants(selected_user, env_suffix)
-        all_roles = get_user_roles(selected_user)
+    current_grants = get_domain_grants(selected_user, env_suffix)
+    all_roles = get_user_roles(selected_user)
 
-        with st.expander("Rôles actuels", expanded=False):
-            if all_roles:
-                for r in sorted(all_roles):
-                    st.code(r)
-            else:
-                st.info("Aucun rôle assigné.")
+    st.divider()
 
-        st.subheader("Modifier les droits")
-        new_selections = render_domain_checkboxes(f"manage_{selected_user}", current_grants)
+    col_info, col_grants = st.columns([1, 2])
+
+    with col_info:
+        st.subheader("Current Roles")
+        if all_roles:
+            for r in sorted(all_roles):
+                st.code(r)
+        else:
+            st.info("No roles assigned.")
+
+    with col_grants:
+        st.subheader(f"Manage Domain Access ({env_choice})")
+
+        active_domains = [d for d, l in current_grants.items() if l != "none"]
+        if active_domains:
+            labels = [f"{DOMAINS[d]['label']} ({'Admin' if current_grants[d] == 'all' else 'Reader'})" for d in active_domains]
+            st.caption(f"Current access: {', '.join(labels)}")
+        else:
+            st.caption("No domain access configured.")
+
+        new_selections = render_domain_checkboxes(f"manage_{selected_user}_{env_choice}", current_grants)
 
         col1, col2 = st.columns(2)
         with col1:
-            if st.button("Appliquer les modifications", type="primary"):
+            if st.button("Apply Changes", type="primary"):
                 role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
                 changes = {}
                 for domain in DOMAINS:
@@ -222,57 +352,38 @@ def page_manage():
                     new = new_selections[domain]
                     if old != new:
                         apply_domain_grants(selected_user, domain, new, env_suffix, old)
-                        changes[domain] = {"from": old, "to": new}
+                        changes[domain] = {"from": old, "to": new, "wh_role": f"{DOMAINS[domain]['prefix']}_WH{env_suffix}_USER"}
 
                 if changes:
                     has_any_grant = any(v != "none" for v in new_selections.values())
                     action_type = "DISABLE_USER" if not has_any_grant else "UPDATE_GRANTS"
                     domains_affected = list(changes.keys())
 
-                    log_action(action_type, [selected_user], role_used, domains_affected, changes,
-                               f"{'Disabled' if not has_any_grant else 'Updated grants for'} {selected_user}")
+                    log_action(action_type, [selected_user], role_used, env_choice, domains_affected, changes,
+                               f"{'Disabled' if not has_any_grant else 'Updated grants for'} {selected_user} in {env_choice}")
 
                     if not has_any_grant:
-                        st.warning(f"⚠️ {selected_user} n'a plus aucun droit — marqué comme désactivé.")
+                        st.warning(f"{selected_user} has no more access in {env_choice} — marked as disabled.")
                     else:
-                        st.success(f"✅ Droits mis à jour pour {selected_user}")
+                        st.success(f"Access updated for {selected_user} in {env_choice}")
 
-                    st.rerun()
+                    st.experimental_rerun()
                 else:
-                    st.info("Aucune modification détectée.")
+                    st.info("No changes detected.")
 
         with col2:
-            if st.button("Réinitialiser"):
-                st.rerun()
-
-
-def page_logs():
-    st.header("Journal d'activité")
-    rows = session.sql("""
-        SELECT ACTION_ID, ACTION_TYPE, TARGET_USERS, PERFORMED_BY, ROLE_USED, 
-               DOMAINS_AFFECTED, GRANTS_DETAIL, COMMENT, ACTION_TIMESTAMP
-        FROM MGMT_DB.USER_MANAGEMENT.USER_ACTIVITY_LOG
-        ORDER BY ACTION_TIMESTAMP DESC
-        LIMIT 100
-    """).to_pandas()
-
-    if rows.empty:
-        st.info("Aucune activité enregistrée.")
-    else:
-        st.dataframe(rows, use_container_width=True)
+            st.button("Reset", on_click=reset_checkboxes)
 
 
 st.set_page_config(page_title="User & Grants Manager", layout="wide")
 st.title("User & Grants Manager")
 
 current_role = check_access()
-st.caption(f"Connecté en tant que **{session.sql('SELECT CURRENT_USER()').collect()[0][0]}** | Rôle : **{current_role}**")
+st.caption(f"Logged in as **{session.sql('SELECT CURRENT_USER()').collect()[0][0]}** | Role: **{current_role}**")
 
-tab1, tab2, tab3 = st.tabs(["➕ Créer", "✏️ Gérer", "📋 Journal"])
+tab1, tab2 = st.tabs(["Create Users", "Manage Users"])
 
 with tab1:
     page_create()
 with tab2:
     page_manage()
-with tab3:
-    page_logs()
