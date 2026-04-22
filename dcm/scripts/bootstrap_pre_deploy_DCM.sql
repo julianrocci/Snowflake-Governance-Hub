@@ -73,6 +73,7 @@ BEGIN
                 TARGET_USERS ARRAY NOT NULL,
                 PERFORMED_BY VARCHAR(256) NOT NULL,
                 ROLE_USED VARCHAR(256) NOT NULL,
+                ENV VARCHAR(10) NOT NULL,
                 DOMAINS_AFFECTED ARRAY,
                 GRANTS_DETAIL VARIANT,
                 COMMENT VARCHAR(1024),
