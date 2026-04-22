@@ -1,10 +1,10 @@
-name: Deploy DEV (Manual)
+name: Deploy PROD (Manual)
 
 on:
   workflow_dispatch:
     inputs:
       confirm:
-        description: 'Type "deploy-dev" to confirm'
+        description: 'Type "deploy-prod" to confirm'
         required: true
 
 env:
@@ -13,8 +13,8 @@ env:
   SNOWFLAKE_PRIVATE_KEY: ${{ secrets.SNOWFLAKE_PRIVATE_KEY }}
 
 jobs:
-  deploy-dev:
-    if: github.event.inputs.confirm == 'deploy-dev'
+  deploy-prod:
+    if: github.event.inputs.confirm == 'deploy-prod'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -41,39 +41,45 @@ jobs:
           authenticator = "SNOWFLAKE_JWT"
           private_key_file = "/tmp/rsa_key.p8"
           role = "DCM_DEPLOYER"
-          warehouse = "TRANSFORM_WH_DEV"
+          warehouse = "TRANSFORM_WH"
           EOF
           chmod 0600 ~/.snowflake/config.toml
 
       - name: DCM Deploy
         working-directory: dcm
         run: |
-          snow dcm deploy MGMT_DB_DEV.DCM.COST_GOVERNANCE_DCM_DEV \
-            --target DEV \
+          snow dcm deploy MGMT_DB.DCM.COST_GOVERNANCE_DCM \
+            --target PROD \
             --connection default
 
       - name: Post-deploy Future Grants
         run: |
-          snow sql -q "CALL MGMT_DB_DEV.DCM.SETUP_FUTURE_GRANTS('DEV')" \
+          snow sql -q "CALL MGMT_DB.DCM.SETUP_FUTURE_GRANTS('PROD')" \
             --connection default
 
       - name: Generate dbt profiles for CI/CD
         run: |
           cat > dbt/profiles.yml << EOF
           default:
-            target: dev
+            target: prod
             outputs:
-              dev:
+              prod:
                 type: snowflake
                 account: $SNOWFLAKE_ACCOUNT
                 user: $SNOWFLAKE_USER
                 private_key_path: /tmp/rsa_key.p8
                 role: ACCOUNTADMIN
-                database: MGMT_DB_DEV
-                warehouse: TRANSFORM_WH_DEV
+                database: MGMT_DB
+                warehouse: TRANSFORM_WH
                 schema: COST_GOVERNANCE
                 threads: 4
           EOF
 
       - name: dbt Build
-        run: dbt build --project-dir dbt --profiles-dir dbt --target dev
+        run: dbt build --project-dir dbt --profiles-dir dbt --target prod
+
+      - name: Deploy Streamlit App
+        run: |
+          snow stage copy streamlit/user_grants_manager/app.py \
+            @MGMT_DB.USER_MANAGEMENT.USER_GRANTS_MANAGER_STAGE/streamlit/user_grants_manager/ \
+            --connection default --overwrite

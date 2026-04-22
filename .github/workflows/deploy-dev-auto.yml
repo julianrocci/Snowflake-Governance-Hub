@@ -1,11 +1,9 @@
-name: Deploy DEV (Manual)
+name: Deploy DEV auto
 
 on:
-  workflow_dispatch:
-    inputs:
-      confirm:
-        description: 'Type "deploy-dev" to confirm'
-        required: true
+  push:
+    branches:
+      - 'release/*'
 
 env:
   SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
@@ -14,7 +12,6 @@ env:
 
 jobs:
   deploy-dev:
-    if: github.event.inputs.confirm == 'deploy-dev'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
