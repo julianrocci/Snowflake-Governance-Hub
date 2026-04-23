@@ -203,9 +203,122 @@ def render_domain_expander(domain_key, env_order, col_container=None, default_le
 # ============================================================
 
 def page_create():
-    st.markdown("Enter one or more usernames separated by commas.")
+    st.markdown('<div class="section-divider-title">Mode</div>', unsafe_allow_html=True)
+    mode = st.radio("Mode", options=["New User", "Clone from User"], horizontal=True, key="create_mode", label_visibility="collapsed")
 
-    usernames_input = st.text_input("Usernames", placeholder="USER1, USER2, USER3")
+    section("New User")
+    usernames_input = st.text_input("Enter one or more usernames separated by commas.", placeholder="USER1, USER2, USER3")
+
+    if mode == "Clone from User":
+        # -- Clone mode: pick a source user and copy their grants --
+        section("Clone From")
+        all_users = get_users()
+        source_user = st.selectbox("Select user to clone", options=[""] + all_users, index=0, key="clone_source")
+
+        if not source_user:
+            return
+
+        st.caption(f"New user(s) will receive the same domain access as **{source_user}** across all environments.")
+
+        selections = {}
+        env_order = list(ENVS.keys())
+        for env_name in env_order:
+            env_suffix = ENVS[env_name]
+            grants = get_domain_grants(source_user, env_suffix)
+            selections[env_name] = grants
+
+        active_envs = []
+        for env_name in env_order:
+            if any(v != "none" for v in selections[env_name].values()):
+                active_envs.append(env_name)
+
+        if not active_envs:
+            st.warning(f"{source_user} has no domain access to clone.")
+            return
+
+        section("Domain Access from Clone")
+        active_domains = []
+        for domain_key in DOMAINS:
+            for env_name in active_envs:
+                if selections[env_name].get(domain_key, "none") != "none":
+                    active_domains.append(domain_key)
+                    break
+
+        current_grants_by_env = {}
+        for env_name in active_envs:
+            current_grants_by_env[env_name] = selections[env_name]
+
+        domain_pairs = [active_domains[i:i+2] for i in range(0, len(active_domains), 2)]
+        for pair in domain_pairs:
+            cols = st.columns(2)
+            for idx, domain_key in enumerate(pair):
+                info = DOMAINS[domain_key]
+                prefix = info["prefix"]
+                with cols[idx]:
+                    with st.expander(f"{info['label']}", expanded=True):
+                        ecols = st.columns(len(active_envs))
+                        for eidx, env_name in enumerate(active_envs):
+                            suffix = ENVS[env_name]
+                            current = selections[env_name].get(domain_key, "none")
+                            with ecols[eidx]:
+                                st.markdown(f"**{env_name}**")
+                                st.caption(f"`{prefix}_READER{suffix}`")
+                                st.caption(f"`{prefix}_ADMIN{suffix}`")
+                                if current == "all":
+                                    st.checkbox("Admin", value=True, disabled=True, key=f"clone_{domain_key}_{env_name}_admin")
+                                elif current == "select":
+                                    st.checkbox("Reader", value=True, disabled=True, key=f"clone_{domain_key}_{env_name}_reader")
+                                else:
+                                    st.caption("\u2014")
+
+        user_comment = st.text_input("Comment (optional)", key="clone_comment")
+        if st.button("Clone User(s)", type="primary"):
+            if not usernames_input.strip():
+                st.error("Please enter at least one username.")
+                return
+
+            usernames = [u.strip().upper() for u in usernames_input.split(",") if u.strip()]
+            role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
+
+            all_created = []
+            all_errors = []
+
+            for env_name in active_envs:
+                env_suffix = ENVS[env_name]
+                env_grants = {d: l for d, l in selections[env_name].items() if l != "none"}
+                created = []
+                errors = []
+
+                for username in usernames:
+                    try:
+                        session.sql(f"CREATE USER IF NOT EXISTS {username} MUST_CHANGE_PASSWORD = TRUE PASSWORD = 'TempPass123!'").collect()
+                        for domain, level in env_grants.items():
+                            apply_domain_grants(username, domain, level, env_suffix, "none")
+                        created.append(username)
+                    except Exception as e:
+                        errors.append(f"{username}: {str(e)}")
+
+                grants_detail = {}
+                for d, l in env_grants.items():
+                    prefix = DOMAINS[d]["prefix"]
+                    grants_detail[d] = {"level": l, "role": f"{prefix}_READER{env_suffix}" if l == "select" else f"{prefix}_ADMIN{env_suffix}", "wh_role": f"{prefix}_WH{env_suffix}_USER"}
+
+                if created:
+                    auto_comment = f"Cloned from {source_user} in {env_name}"
+                    comment_text = user_comment if user_comment.strip() else auto_comment
+                    log_action("CREATE_USER", created, role_used, env_name, list(env_grants.keys()), grants_detail, comment_text)
+                    all_created.extend([(u, env_name) for u in created])
+                all_errors.extend(errors)
+
+            get_users.clear()
+            if all_created:
+                user_list = ", ".join(sorted(set(u for u, _ in all_created)))
+                st.success(f"{len(set(u for u, _ in all_created))} user(s) cloned from {source_user}: {user_list}")
+            for err in all_errors:
+                st.error(err)
+        return
+
+    # -- Standard create mode --
 
     section("Environments")
     env_cols = st.columns(3)
