@@ -353,6 +353,46 @@ def page_manage():
     if not selected_user:
         return
 
+    # -- User Info --
+    section("User Info")
+    try:
+        user_info = session.sql(f"SHOW USERS LIKE '{selected_user}'").collect()
+        if user_info:
+            u = user_info[0]
+            created_str = str(u["created_on"] or "—")[:16]
+            last_login_raw = u["last_success_login"]
+            last_login_str = str(last_login_raw)[:16] if last_login_raw else "Never"
+            user_roles = get_user_roles(selected_user)
+
+            col1, col2, col3 = st.columns(3)
+            with col1:
+                st.caption("Login Name")
+                st.code(str(u["login_name"] or "—"))
+                st.caption("Email")
+                st.code(str(u["email"] or "—"))
+            with col2:
+                st.caption("Created")
+                st.code(created_str)
+                st.caption("Last Login")
+                st.code(last_login_str)
+            with col3:
+                st.caption("Default Role")
+                role_options = ["—"] + sorted(user_roles) if user_roles else ["—"]
+                current_default = str(u["default_role"] or "")
+                if current_default and current_default not in role_options:
+                    role_options.insert(1, current_default)
+                idx = role_options.index(current_default) if current_default in role_options else 0
+                new_default = st.selectbox("Default Role", options=role_options, index=idx, key="manage_default_role", label_visibility="collapsed")
+                if new_default != current_default and new_default != "—":
+                    session.sql(f"ALTER USER {selected_user} SET DEFAULT_ROLE = {new_default}").collect()
+                    st.success(f"Default role set to {new_default}")
+                    st.experimental_rerun()
+                st.caption("Status")
+                status = "Disabled" if u["disabled"] == "true" else "Active"
+                st.code(status)
+    except Exception:
+        st.caption("Could not load user info.")
+
     section("Environments")
     env_cols = st.columns(3)
     selected_envs = []
