@@ -4,17 +4,17 @@ default_target: 'DEV'
 
 targets:
   DEV:
-    account_identifier: sq73917
+    account_identifier: pv63043
     project_name: 'MGMT_DB_DEV.DCM.COST_GOVERNANCE_DCM_DEV'
     project_owner: DCM_DEPLOYER
     templating_config: 'DEV'
   UAT:
-    account_identifier: sq73917
+    account_identifier: pv63043
     project_name: 'MGMT_DB_UAT.DCM.COST_GOVERNANCE_DCM_UAT'
     project_owner: DCM_DEPLOYER
     templating_config: 'UAT'
   PROD:
-    account_identifier: sq73917
+    account_identifier: pv63043
     project_name: 'MGMT_DB.DCM.COST_GOVERNANCE_DCM'
     project_owner: DCM_DEPLOYER
     templating_config: 'PROD'
@@ -31,6 +31,8 @@ templating:
     ret_db: 'RETAIL_DB_DEV'
     ana_db: 'ANALYTICS_DB_DEV'
     loy_db: 'LOYALTY_DB_DEV'
+    sal_db: 'SALES_DB_DEV'
+    hr_db: 'HR_DB_DEV'
     warehouses:
       - name: MGMT
         wh_size: 'XSMALL'
@@ -60,6 +62,14 @@ templating:
         wh_size: 'XSMALL'
         auto_suspend: 120
         comment: 'Loyalty — rewards and customer programs'
+      - name: SAL
+        wh_size: 'XSMALL'
+        auto_suspend: 120
+        comment: 'Sales — CRM, pipeline and deals'
+      - name: HR
+        wh_size: 'XSMALL'
+        auto_suspend: 120
+        comment: 'HR — employees, payroll and workforce'
       - name: TRANSFORM
         wh_size: 'XSMALL'
         auto_suspend: 300
@@ -74,6 +84,8 @@ templating:
       ret_db: 'RETAIL_DB_DEV'
       ana_db: 'ANALYTICS_DB_DEV'
       loy_db: 'LOYALTY_DB_DEV'
+      sal_db: 'SALES_DB_DEV'
+      hr_db: 'HR_DB_DEV'
     UAT:
       env_suffix: '_UAT'
       mgmt_db: 'MGMT_DB_UAT'
@@ -83,6 +95,8 @@ templating:
       ret_db: 'RETAIL_DB_UAT'
       ana_db: 'ANALYTICS_DB_UAT'
       loy_db: 'LOYALTY_DB_UAT'
+      sal_db: 'SALES_DB_UAT'
+      hr_db: 'HR_DB_UAT'
     PROD:
       env_suffix: ''
       mgmt_db: 'MGMT_DB'
@@ -92,6 +106,8 @@ templating:
       ret_db: 'RETAIL_DB'
       ana_db: 'ANALYTICS_DB'
       loy_db: 'LOYALTY_DB'
+      sal_db: 'SALES_DB'
+      hr_db: 'HR_DB'
       warehouses:
         - name: MGMT
           wh_size: 'SMALL'
@@ -121,6 +137,14 @@ templating:
           wh_size: 'MEDIUM'
           auto_suspend: 120
           comment: 'Loyalty — rewards and customer programs'
+        - name: SAL
+          wh_size: 'MEDIUM'
+          auto_suspend: 120
+          comment: 'Sales — CRM, pipeline and deals'
+        - name: HR
+          wh_size: 'SMALL'
+          auto_suspend: 120
+          comment: 'HR — employees, payroll and workforce'
         - name: TRANSFORM
           wh_size: 'LARGE'
           auto_suspend: 300

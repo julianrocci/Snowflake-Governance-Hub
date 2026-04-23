@@ -86,6 +86,8 @@ GRANT ROLE {{wh.name}}_WH{{env_suffix}}_USER TO ROLE SYSADMIN;
 {{ _domain_roles(eco_db) }}
 {{ _domain_roles(ret_db) }}
 {{ _domain_roles(loy_db) }}
+{{ _domain_roles(sal_db) }}
+{{ _domain_roles(hr_db) }}
 
 {{ _analytics_roles(ana_db) }}
 
@@ -97,6 +99,8 @@ GRANT ROLE {{wh.name}}_WH{{env_suffix}}_USER TO ROLE SYSADMIN;
 {{ _domain_account_roles(eco_db, 'ECO') }}
 {{ _domain_account_roles(ret_db, 'RET') }}
 {{ _domain_account_roles(loy_db, 'LOY') }}
+{{ _domain_account_roles(sal_db, 'SAL') }}
+{{ _domain_account_roles(hr_db, 'HR') }}
 
 
 -- MANAGEMENT ACCOUNT ROLES (bundle: governance db roles + warehouse)

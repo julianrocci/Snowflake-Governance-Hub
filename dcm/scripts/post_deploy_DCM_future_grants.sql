@@ -23,7 +23,7 @@ BEGIN
         ELSE RETURN 'ERROR: Invalid environment. Use DEV, UAT, or PROD.';
     END CASE;
 
-    domains := ARRAY_CONSTRUCT('FINANCE', 'MARKETING', 'ECOMMERCE', 'RETAIL', 'LOYALTY');
+    domains := ARRAY_CONSTRUCT('FINANCE', 'MARKETING', 'ECOMMERCE', 'RETAIL', 'LOYALTY', 'SALES', 'HR');
 
     FOR i IN 0 TO ARRAY_SIZE(domains) - 1 DO
         db := GET(domains, i) || '_DB' || env_suffix;

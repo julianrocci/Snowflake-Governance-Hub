@@ -91,6 +91,34 @@ DEFINE SCHEMA {{loy_db}}.MARTS
     WITH MANAGED ACCESS
     COMMENT = 'Loyalty business models for consumption';
 
+DEFINE DATABASE {{sal_db}}
+    COMMENT = 'Sales domain data';
+
+DEFINE SCHEMA {{sal_db}}.RAW
+    COMMENT = 'Raw ingested sales data';
+
+DEFINE SCHEMA {{sal_db}}.STAGING
+    WITH MANAGED ACCESS
+    COMMENT = 'Cleaned and standardized sales data';
+
+DEFINE SCHEMA {{sal_db}}.MARTS
+    WITH MANAGED ACCESS
+    COMMENT = 'Sales business models for consumption';
+
+DEFINE DATABASE {{hr_db}}
+    COMMENT = 'HR domain data';
+
+DEFINE SCHEMA {{hr_db}}.RAW
+    COMMENT = 'Raw ingested HR data';
+
+DEFINE SCHEMA {{hr_db}}.STAGING
+    WITH MANAGED ACCESS
+    COMMENT = 'Cleaned and standardized HR data';
+
+DEFINE SCHEMA {{hr_db}}.MARTS
+    WITH MANAGED ACCESS
+    COMMENT = 'HR business models for consumption';
+
 {% for wh in warehouses %}
 DEFINE WAREHOUSE {{wh.name}}_WH{{env_suffix}}
 WITH
