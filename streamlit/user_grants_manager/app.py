@@ -509,6 +509,38 @@ def page_manage():
             else:
                 st.info("No changes detected.")
 
+    # -- Disable / Enable User --
+    try:
+        user_info = session.sql(f"SHOW USERS LIKE '{selected_user}'").collect()
+        is_disabled = user_info[0]["disabled"] == "true" if user_info else False
+    except Exception:
+        is_disabled = False
+
+    if is_disabled:
+        section("Enable User")
+        confirm_key = f"confirm_enable_{selected_user}"
+        confirm = st.checkbox(f"I confirm I want to enable user {selected_user}", key=confirm_key)
+        if st.button("Enable User", type="primary", disabled=not confirm):
+            role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
+            session.sql(f"ALTER USER {selected_user} SET DISABLED = FALSE").collect()
+            log_action("ENABLE_USER", [selected_user], role_used, "ALL", ["N/A"],
+                       {"N/A": {"role": "", "wh_role": ""}}, f"Enable user {selected_user}.")
+            get_users.clear()
+            st.success(f"{selected_user} has been re-enabled.")
+            st.experimental_rerun()
+    else:
+        section("Disable User")
+        confirm_key = f"confirm_disable_{selected_user}"
+        confirm = st.checkbox(f"I confirm I want to disable user {selected_user}", key=confirm_key)
+        if st.button("Disable User", type="primary", disabled=not confirm):
+            role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
+            session.sql(f"ALTER USER {selected_user} SET DISABLED = TRUE").collect()
+            log_action("DISABLE_USER", [selected_user], role_used, "ALL", ["N/A"],
+                       {"N/A": {"role": "", "wh_role": ""}}, f"Disable user {selected_user}.")
+            get_users.clear()
+            st.warning(f"{selected_user} has been disabled.")
+            st.experimental_rerun()
+
 
 # ============================================================
 # Page: Audit Trail — filterable log of all actions
