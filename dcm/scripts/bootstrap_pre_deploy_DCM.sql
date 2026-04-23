@@ -76,6 +76,7 @@ BEGIN
                 ENV VARCHAR(10) NOT NULL,
                 DOMAIN VARCHAR(50),
                 ROLE_ASSIGNED VARCHAR(256),
+                OBJECT_TYPE VARCHAR(50),
                 GRANTS_DETAIL VARIANT,
                 COMMENT VARCHAR(1024),
                 ACTION_TIMESTAMP TIMESTAMP_NTZ DEFAULT CURRENT_TIMESTAMP()
