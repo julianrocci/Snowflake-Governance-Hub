@@ -784,8 +784,12 @@ st.set_page_config(page_title="User & Grants Manager", layout="wide")
 
 st.markdown("""
 <style>
+    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { display: none !important; }
+    .section-divider { border-top: 2px solid #E2E8F0; padding-top: 1rem; margin-top: 1.5rem; }
+    .section-divider-title { color: #1E293B; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.5rem 0; }
     .app-header {
-        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        background: #FFFFFF;
+        border: 2px solid #CBD5E1;
         padding: 1.5rem 2rem;
         border-radius: 12px;
         margin-bottom: 1.5rem;
@@ -796,49 +800,22 @@ st.markdown("""
     .app-header-left { display: flex; align-items: center; gap: 1rem; }
     .app-header-icon {
         width: 48px; height: 48px;
-        background: linear-gradient(135deg, #3B82F6, #8B5CF6);
+        background: transparent;
+        border: 2px solid #CBD5E1;
         border-radius: 12px;
         display: flex; align-items: center; justify-content: center;
         font-size: 22px;
     }
-    .app-header-title { color: #F8FAFC; font-size: 1.5rem; font-weight: 700; margin: 0; }
-    .app-header-sub { color: #94A3B8; font-size: 0.85rem; margin: 0; }
+    .app-header-title { color: #1E293B; font-size: 1.5rem; font-weight: 700; margin: 0; }
+    .app-header-sub { color: #64748B; font-size: 0.85rem; margin: 0; }
     .header-badge {
         padding: 0.35rem 0.75rem;
         border-radius: 20px;
         font-size: 0.75rem;
         font-weight: 600;
-    }
-    .badge-role { background: rgba(59,130,246,0.15); color: #60A5FA; border: 1px solid rgba(59,130,246,0.3); }
-    .badge-user { background: rgba(139,92,246,0.15); color: #A78BFA; border: 1px solid rgba(139,92,246,0.3); }
-    .stat-card {
-        background: #FFFFFF;
-        border: 1px solid #E2E8F0;
-        border-radius: 12px;
-        padding: 1.25rem;
-        text-align: center;
-    }
-    .stat-value { font-size: 2rem; font-weight: 700; color: #0F172A; }
-    .stat-label { font-size: 0.8rem; color: #64748B; font-weight: 500; margin-top: 0.25rem; }
-    h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { display: none !important; }
-    .section-divider {
-        border-top: 2px solid #E2E8F0;
-        padding-top: 1rem;
-        margin-top: 1.5rem;
-    }
-    .section-divider-title {
+        background: transparent;
         color: #1E293B;
-        font-size: 0.85rem;
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin: 0 0 0.5rem 0;
-    }
-    div[data-testid="stTabs"] button {
-        font-size: 1.1rem !important;
-        font-weight: 700 !important;
-        padding: 0.75rem 2rem !important;
-        letter-spacing: 0.3px;
+        border: 1px solid #CBD5E1;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -856,8 +833,8 @@ st.markdown(f"""
         </div>
     </div>
     <div style="display:flex;gap:0.5rem;align-items:center;">
-        <span class="header-badge badge-user">&#x1f464; {current_user}</span>
-        <span class="header-badge badge-role">&#x1f511; {current_role}</span>
+        <span class="header-badge">&#x1f464; {current_user}</span>
+        <span class="header-badge">&#x1f511; {current_role}</span>
     </div>
 </div>
 """, unsafe_allow_html=True)
