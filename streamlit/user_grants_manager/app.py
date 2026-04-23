@@ -273,7 +273,8 @@ def page_create():
                 selections[env_name][domain_key] = "none"
 
     # -- Execute user creation and grant assignment --
-    if st.button("Create Users", type="primary"):
+    user_comment = st.text_input("Comment (optional)", key="create_comment")
+    if st.button("Create User(s)", type="primary"):
         if not usernames_input.strip():
             st.error("Please enter at least one username.")
             return
@@ -321,8 +322,10 @@ def page_create():
                     grants_detail[d] = {"level": l, "role": role_name, "wh_role": wh_role}
 
             if created:
+                auto_comment = f"Created {len(created)} user(s) in {env_name}"
+                comment_text = user_comment if user_comment.strip() else auto_comment
                 log_action("CREATE_USER", created, role_used, env_name, domains_affected, grants_detail,
-                           f"Created {len(created)} user(s) in {env_name}")
+                           comment_text)
                 all_created.extend([(u, env_name) for u in created])
 
             all_errors.extend(errors)
