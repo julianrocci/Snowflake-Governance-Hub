@@ -12,6 +12,8 @@ DOMAINS = {
     "RETAIL": {"prefix": "RET", "label": "Retail"},
     "LOYALTY": {"prefix": "LOY", "label": "Loyalty"},
     "MANAGEMENT": {"prefix": "MGMT", "label": "Management"},
+    "SALES": {"prefix": "SAL", "label": "Sales"},
+    "HR": {"prefix": "HR", "label": "HR"},
 }
 
 # -- Environment suffixes appended to role/db names --
@@ -37,22 +39,39 @@ def check_access():
 
 
 def log_action(action_type, target_users, role_used, env, domains_affected, grants_detail, comment=""):
-    users_arr = ", ".join([f"'{u}'" for u in target_users])
-    domains_arr = ", ".join([f"'{d}'" for d in domains_affected]) if domains_affected else ""
-    grants_json = json.dumps(grants_detail) if grants_detail else "{}"
-    session.sql(f"""
-        INSERT INTO MGMT_DB.USER_MANAGEMENT.USER_ACTIVITY_LOG 
-        (ACTION_TYPE, TARGET_USERS, PERFORMED_BY, ROLE_USED, ENV, DOMAINS_AFFECTED, GRANTS_DETAIL, COMMENT)
-        SELECT 
-            '{action_type}',
-            ARRAY_CONSTRUCT({users_arr}),
-            CURRENT_USER(),
-            '{role_used}',
-            '{env}',
-            ARRAY_CONSTRUCT({domains_arr}),
-            PARSE_JSON('{grants_json}'),
-            '{comment}'
-    """).collect()
+    if not domains_affected:
+        domains_affected = ["N/A"]
+    for user in target_users:
+        for domain in domains_affected:
+            detail = grants_detail.get(domain, {}) if grants_detail else {}
+            detail_json = json.dumps(detail) if detail else "{}"
+            safe_comment = comment.replace("'", "''")
+            role_assigned = detail.get("role", "")
+            wh_role = detail.get("wh_role", "")
+            old_level = detail.get("from", "none")
+            new_level = detail.get("to", "")
+            objects = []
+            objects.append(("DATABASE", role_assigned))
+            if old_level == "none" and new_level in ("select", "all"):
+                objects.append(("WAREHOUSE", wh_role))
+            for obj_type, role_name in objects:
+                if not role_name:
+                    continue
+                session.sql(f"""
+                    INSERT INTO MGMT_DB.USER_MANAGEMENT.USER_ACTIVITY_LOG 
+                    (ACTION_TYPE, USER_NAME, PERFORMED_BY, ROLE_USED, ENV, DOMAIN, GRANTS_DETAIL, COMMENT, ROLE_ASSIGNED, OBJECT_TYPE)
+                    SELECT 
+                        '{action_type}',
+                        '{user}',
+                        CURRENT_USER(),
+                        '{role_used}',
+                        '{env}',
+                        '{domain}',
+                        PARSE_JSON('{detail_json}'),
+                        '{safe_comment}',
+                        '{role_name}',
+                        '{obj_type}'
+                """).collect()
 
 
 # ============================================================
@@ -135,7 +154,14 @@ def render_domain_expander(domain_key, env_order, col_container=None, default_le
     domain_selections = {}
     options = ["None", "Reader", "Admin"] if allow_none else ["Reader", "Admin"]
     level_map = {"None": "none", "Reader": "select", "Admin": "all"}
-    with container.expander(f"{info['label']}", expanded=True):
+    has_access = False
+    if current_grants_by_env:
+        for env_name in env_order:
+            if current_grants_by_env.get(env_name, {}).get(domain_key, "none") != "none":
+                has_access = True
+                break
+    label = f"{info['label']}" if not has_access else info['label']
+    with container.expander(label, expanded=True):
         if env_order:
             env_cols = st.columns(len(env_order))
             for idx, env_name in enumerate(env_order):
@@ -379,14 +405,25 @@ def page_manage():
     # -- Domain Access: same UI as Create Users to add/modify grants --
     section("Domain Access")
     st.caption("*Select domains and access levels to grant.*")
-    domain_labels = ["All Domains"] + [info["label"] for info in DOMAINS.values()]
-    selected_domains = st.multiselect("Select domains", options=domain_labels, key="manage_domains")
+    domain_labels_with_status = ["All Domains"]
+    label_to_key = {}
+    for k, v in DOMAINS.items():
+        has_any = False
+        if env_order and current_grants_by_env:
+            for env_name in env_order:
+                if current_grants_by_env.get(env_name, {}).get(k, "none") != "none":
+                    has_any = True
+                    break
+        lbl = f"🟢 {v['label']}" if has_any else f"⚪ {v['label']}"
+        domain_labels_with_status.append(lbl)
+        label_to_key[lbl] = k
+    selected_domains = st.multiselect("Select domains", options=domain_labels_with_status, key="manage_domains")
 
     all_domains_selected = "All Domains" in selected_domains
     if all_domains_selected:
         modify_domains = list(DOMAINS.keys())
     else:
-        modify_domains = [k for k, v in DOMAINS.items() if v["label"] in selected_domains]
+        modify_domains = [label_to_key[lbl] for lbl in selected_domains if lbl in label_to_key]
 
     new_selections = {}
 
@@ -429,6 +466,7 @@ def page_manage():
 
     # -- Apply changes --
     if new_selections and env_order:
+        user_comment = st.text_input("Comment (optional)", key="manage_comment")
         if st.button("Apply Changes", type="primary"):
             role_used = session.sql("SELECT CURRENT_ROLE()").collect()[0][0]
             any_change = False
@@ -441,12 +479,26 @@ def page_manage():
                     new = new_selections.get(env_name, {}).get(domain, old)
                     if old != new:
                         apply_domain_grants(selected_user, domain, new, env_suffix, old)
-                        changes[domain] = {"from": old, "to": new, "wh_role": f"{DOMAINS[domain]['prefix']}_WH{env_suffix}_USER"}
+                        prefix = DOMAINS[domain]["prefix"]
+                        new_label = "Reader" if new == "select" else "Admin"
+                        old_label = "Reader" if old == "select" else "Admin"
+                        role_name = f"{prefix}_READER{env_suffix}" if new == "select" else f"{prefix}_ADMIN{env_suffix}"
+                        domain_tag = f"{prefix}{env_suffix}" if env_suffix else prefix
+                        if old == "none":
+                            auto_comment = f"Add grants {new_label} on {domain_tag}."
+                        elif new == "none":
+                            auto_comment = f"Remove grants {old_label} on {domain_tag}."
+                            role_name = f"{prefix}_READER{env_suffix}" if old == "select" else f"{prefix}_ADMIN{env_suffix}"
+                        else:
+                            auto_comment = f"Update grants to {new_label} on {domain_tag}."
+                        comment_text = user_comment if user_comment.strip() else auto_comment
+                        changes[domain] = {"from": old, "to": new, "role": role_name, "wh_role": f"{prefix}_WH{env_suffix}_USER", "comment": comment_text}
 
                 if changes:
                     any_change = True
-                    log_action("UPDATE_GRANTS", [selected_user], role_used, env_name, list(changes.keys()), changes,
-                               f"Updated grants for {selected_user} in {env_name}")
+                    for domain, detail in changes.items():
+                        log_action("UPDATE_GRANTS", [selected_user], role_used, env_name, [domain],
+                                   {domain: detail}, detail["comment"])
 
             if any_change:
                 st.success(f"Access updated for {selected_user}")
@@ -460,43 +512,78 @@ def page_manage():
 # ============================================================
 
 def page_audit():
+    all_users = get_users()
+
+    section("Audit Search")
+    selected_user = st.selectbox("Search user", options=[""] + all_users, index=0, key="audit_user")
+
+    if not selected_user:
+        return
+
+    # -- Filters --
     col_f1, col_f2, col_f3 = st.columns(3)
     with col_f1:
         action_filter = st.selectbox("Action Type", ["All", "CREATE_USER", "UPDATE_GRANTS", "DISABLE_USER"], key="audit_action")
     with col_f2:
         env_filter = st.selectbox("Environment", ["All", "DEV", "UAT", "PROD"], key="audit_env")
     with col_f3:
-        limit = st.selectbox("Show last", [25, 50, 100, 250], key="audit_limit")
+        object_filter = st.selectbox("Object Type", ["All", "DATABASE", "WAREHOUSE"], key="audit_object")
 
-    where_clauses = []
+    where_clauses = [f"USER_NAME = '{selected_user}'"]
     if action_filter != "All":
         where_clauses.append(f"ACTION_TYPE = '{action_filter}'")
     if env_filter != "All":
         where_clauses.append(f"ENV = '{env_filter}'")
-    where_sql = "WHERE " + " AND ".join(where_clauses) if where_clauses else ""
+    if object_filter != "All":
+        where_clauses.append(f"OBJECT_TYPE = '{object_filter}'")
+    where_sql = "WHERE " + " AND ".join(where_clauses)
 
     try:
         df = session.sql(f"""
-            SELECT ACTION_TIMESTAMP, ACTION_TYPE, TARGET_USERS, PERFORMED_BY, ROLE_USED, ENV, DOMAINS_AFFECTED, COMMENT
+            SELECT 
+                ACTION_TIMESTAMP,
+                ACTION_TYPE,
+                USER_NAME AS "USER",
+                DOMAIN,
+                ROLE_ASSIGNED,
+                OBJECT_TYPE,
+                ENV,
+                COMMENT,
+                PERFORMED_BY,
+                ROLE_USED
             FROM MGMT_DB.USER_MANAGEMENT.USER_ACTIVITY_LOG
             {where_sql}
             ORDER BY ACTION_TIMESTAMP DESC
-            LIMIT {limit}
         """).to_pandas()
 
         if df.empty:
-            st.info("No audit entries found.")
+            st.info(f"No audit entries found for **{selected_user}**.")
         else:
-            stats = st.columns(4)
-            with stats[0]:
-                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df)}</div><div class="stat-label">Actions shown</div></div>', unsafe_allow_html=True)
-            with stats[1]:
-                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df[df["ACTION_TYPE"] == "CREATE_USER"])}</div><div class="stat-label">Users Created</div></div>', unsafe_allow_html=True)
-            with stats[2]:
-                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df[df["ACTION_TYPE"] == "UPDATE_GRANTS"])}</div><div class="stat-label">Grants Updated</div></div>', unsafe_allow_html=True)
-            with stats[3]:
-                st.markdown(f'<div class="stat-card"><div class="stat-value">{len(df[df["ACTION_TYPE"] == "DISABLE_USER"])}</div><div class="stat-label">Users Disabled</div></div>', unsafe_allow_html=True)
-            st.dataframe(df, use_container_width=True, hide_index=True)
+            # -- Pagination 10 rows per page --
+            page_size = 10
+            total_rows = len(df)
+            total_pages = max(1, (total_rows + page_size - 1) // page_size)
+            page_num = st.session_state.get("audit_page", 0)
+            if page_num >= total_pages:
+                page_num = 0
+                st.session_state["audit_page"] = 0
+            start = page_num * page_size
+            end = start + page_size
+
+            st.dataframe(df.iloc[start:end], use_container_width=True)
+
+            if total_pages > 1:
+                col_prev, col_info, col_next = st.columns([1, 2, 1])
+                with col_prev:
+                    if st.button("Previous", key="audit_prev", disabled=(page_num == 0)):
+                        st.session_state["audit_page"] = page_num - 1
+                        st.experimental_rerun()
+                with col_info:
+                    st.caption(f"Page {page_num + 1} / {total_pages} ({total_rows} entries)")
+                with col_next:
+                    if st.button("Next", key="audit_next", disabled=(page_num >= total_pages - 1)):
+                        st.session_state["audit_page"] = page_num + 1
+                        st.experimental_rerun()
     except Exception as e:
         st.warning(f"Could not load audit log: {str(e)}")
 
@@ -545,9 +632,7 @@ st.markdown("""
     }
     .stat-value { font-size: 2rem; font-weight: 700; color: #0F172A; }
     .stat-label { font-size: 0.8rem; color: #64748B; font-weight: 500; margin-top: 0.25rem; }
-
     h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { display: none !important; }
-
     .section-divider {
         border-top: 2px solid #E2E8F0;
         padding-top: 1rem;
@@ -561,7 +646,6 @@ st.markdown("""
         letter-spacing: 1px;
         margin: 0 0 0.5rem 0;
     }
-
     div[data-testid="stTabs"] button {
         font-size: 1.1rem !important;
         font-weight: 700 !important;
