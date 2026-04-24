@@ -450,17 +450,29 @@ def page_manage():
 
             col1, col2, col3 = st.columns(3)
             with col1:
-                st.caption("Login Name")
-                st.code(str(u["login_name"] or "—"))
-                st.caption("Email")
-                st.code(str(u["email"] or "—"))
+                st.markdown(f"""
+                <div class="info-card">
+                    <div class="info-card-label">Login Name</div>
+                    <div class="info-card-value">{u["login_name"] or "—"}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-label">Email</div>
+                    <div class="info-card-value">{u["email"] or "—"}</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col2:
-                st.caption("Created")
-                st.code(created_str)
-                st.caption("Last Login")
-                st.code(last_login_str)
+                st.markdown(f"""
+                <div class="info-card">
+                    <div class="info-card-label">Created</div>
+                    <div class="info-card-value">{created_str}</div>
+                </div>
+                <div class="info-card">
+                    <div class="info-card-label">Last Login</div>
+                    <div class="info-card-value">{last_login_str}</div>
+                </div>
+                """, unsafe_allow_html=True)
             with col3:
-                st.caption("Default Role")
+                st.markdown('<div class="info-card-label" style="margin-bottom:0.3rem;">Default Role</div>', unsafe_allow_html=True)
                 role_options = ["—"] + sorted(user_roles) if user_roles else ["—"]
                 current_default = str(u["default_role"] or "")
                 if current_default and current_default not in role_options:
@@ -471,9 +483,14 @@ def page_manage():
                     session.sql(f"ALTER USER {selected_user} SET DEFAULT_ROLE = {new_default}").collect()
                     st.success(f"Default role set to {new_default}")
                     st.experimental_rerun()
-                st.caption("Status")
                 status = "Disabled" if u["disabled"] == "true" else "Active"
-                st.code(status)
+                status_class = "disabled" if status == "Disabled" else "active"
+                st.markdown(f"""
+                <div class="info-card">
+                    <div class="info-card-label">Status</div>
+                    <div class="info-card-value {status_class}">{status}</div>
+                </div>
+                """, unsafe_allow_html=True)
     except Exception:
         st.caption("Could not load user info.")
 
@@ -705,39 +722,132 @@ st.set_page_config(page_title="User & Grants Manager", layout="wide")
 
 st.markdown("""
 <style>
+    /* --- Hide anchor links --- */
     h1 a, h2 a, h3 a, h4 a, h5 a, h6 a { display: none !important; }
-    .section-divider { border-top: 2px solid #E2E8F0; padding-top: 1rem; margin-top: 1.5rem; }
-    .section-divider-title { color: #1E293B; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; margin: 0 0 0.5rem 0; }
+
+    /* --- Root font --- */
+    html, body, [class*="css"] { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    /* --- Section dividers --- */
+    .section-divider {
+        border-top: 1px solid rgba(148,163,184,0.3);
+        padding-top: 0.75rem;
+        margin-top: 1.25rem;
+    }
+    .section-divider-title {
+        color: #64748B;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        margin: 0 0 0.5rem 0;
+    }
+
+    /* --- Header banner --- */
     .app-header {
-        background: #FFFFFF;
-        border: 2px solid #CBD5E1;
-        padding: 1.5rem 2rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
+        background: linear-gradient(135deg, #0F172A 0%, #1E293B 100%);
+        padding: 1.25rem 1.75rem;
+        border-radius: 10px;
+        margin-bottom: 1.25rem;
         display: flex;
         align-items: center;
         justify-content: space-between;
     }
-    .app-header-left { display: flex; align-items: center; gap: 1rem; }
+    .app-header-left { display: flex; align-items: center; gap: 0.875rem; }
     .app-header-icon {
-        width: 48px; height: 48px;
-        background: transparent;
-        border: 2px solid #CBD5E1;
-        border-radius: 12px;
+        width: 42px; height: 42px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 10px;
         display: flex; align-items: center; justify-content: center;
-        font-size: 22px;
+        font-size: 20px;
     }
-    .app-header-title { color: #1E293B; font-size: 1.5rem; font-weight: 700; margin: 0; }
-    .app-header-sub { color: #64748B; font-size: 0.85rem; margin: 0; }
+    .app-header-title { color: #F8FAFC; font-size: 1.25rem; font-weight: 700; margin: 0; line-height: 1.3; }
+    .app-header-sub { color: #94A3B8; font-size: 0.75rem; margin: 0; font-weight: 400; }
     .header-badge {
-        padding: 0.35rem 0.75rem;
-        border-radius: 20px;
-        font-size: 0.75rem;
+        padding: 0.3rem 0.65rem;
+        border-radius: 6px;
+        font-size: 0.7rem;
         font-weight: 600;
-        background: transparent;
-        color: #1E293B;
-        border: 1px solid #CBD5E1;
+        background: rgba(255,255,255,0.08);
+        color: #CBD5E1;
+        border: 1px solid rgba(255,255,255,0.12);
+        letter-spacing: 0.3px;
     }
+
+    /* --- Info cards --- */
+    .info-card {
+        background: #F8FAFC;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 0.75rem 1rem;
+        margin-bottom: 0.5rem;
+    }
+    .info-card-label {
+        font-size: 0.65rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        color: #94A3B8;
+        margin-bottom: 0.2rem;
+    }
+    .info-card-value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #1E293B;
+        font-family: 'SF Mono', 'Fira Code', monospace;
+    }
+    .info-card-value.active { color: #059669; }
+    .info-card-value.disabled { color: #DC2626; }
+
+    /* --- Streamlit overrides --- */
+    .stTabs [data-baseweb="tab-list"] { gap: 0; border-bottom: 2px solid #E2E8F0; }
+    .stTabs [data-baseweb="tab"] {
+        padding: 0.6rem 1.25rem;
+        font-size: 0.8rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        color: #64748B;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -2px;
+    }
+    .stTabs [aria-selected="true"] {
+        color: #0F172A;
+        border-bottom-color: #0F172A;
+    }
+    .stExpander {
+        border: 1px solid #E2E8F0 !important;
+        border-radius: 8px !important;
+        margin-bottom: 0.5rem;
+    }
+    div[data-testid="stExpander"] details summary {
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+
+    /* --- Buttons --- */
+    .stButton > button[kind="primary"] {
+        background: #0F172A;
+        border: none;
+        border-radius: 8px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 600;
+        font-size: 0.8rem;
+        letter-spacing: 0.3px;
+        color: #FFFFFF !important;
+    }
+    .stButton > button[kind="primary"]:hover {
+        background: #1E293B;
+        color: #FFFFFF !important;
+    }
+    .stButton > button[kind="primary"]:disabled {
+        background: #94A3B8;
+        color: #FFFFFF !important;
+        opacity: 0.7;
+    }
+
+    /* --- Dataframe --- */
+    .stDataFrame { border-radius: 8px; overflow: hidden; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -747,13 +857,13 @@ current_user = session.sql("SELECT CURRENT_USER()").collect()[0][0]
 st.markdown(f"""
 <div class="app-header">
     <div class="app-header-left">
-        <div class="app-header-icon">&#x1f512;</div>
+        <div class="app-header-icon">&#x1f510;</div>
         <div>
             <div class="app-header-title">User & Grants Manager</div>
-            <div class="app-header-sub">Identity & Access Governance Console</div>
+            <div class="app-header-sub">Identity & Access Governance</div>
         </div>
     </div>
-    <div style="display:flex;gap:0.5rem;align-items:center;">
+    <div style="display:flex;gap:0.4rem;align-items:center;">
         <span class="header-badge">&#x1f464; {current_user}</span>
         <span class="header-badge">&#x1f511; {current_role}</span>
     </div>
