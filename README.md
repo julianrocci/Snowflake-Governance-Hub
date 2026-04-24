@@ -1,6 +1,6 @@
 **Focus : Data Quality | Cost Optimization | Performance Tuning**
 
-This project demonstrates a production-ready framework designed to govern, monitor, and optimize a large-scale Snowflake environment. It solves the "hidden costs" pricing problem by providing full transparency and actionable control over data operations.
+This project demonstrates a production-ready framework designed to govern, monitor, and optimize your Snowflake environment. It shows the "hidden costs" problem by providing full transparency and actionable control over data operations. It also enforces automated quality standards and ensures security.
 
 <details>
 <summary>📁 View Project Structure </summary>
