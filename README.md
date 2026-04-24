@@ -1,4 +1,4 @@
-**Focus : Data Governance | Cost Optimization | Performance Tuning**
+**Focus : Data Quality | Cost Optimization | Performance Tuning**
 
 This project demonstrates a production-ready framework designed to govern, monitor, and optimize a large-scale Snowflake environment. It solves the "hidden costs" pricing problem by providing full transparency and actionable control over data operations.
 
@@ -64,6 +64,13 @@ IaC / DevOps: DCM (Database Change Management) – Ensuring automated, auditable
 Visualization: Advanced Analytics Dashboards (Cost & Performance tracking).
 
 **Key Pillars & Solutions**
+
+❄️ Data Quality & Observability
+Data Integrity: Automated data quality checks and governance-ready metrics to ensure platform reliability
+
+Data Freshness: Monitoring SLA/SLOs for critical pipelines to ensure data is updated within expected timeframes (Target Lag).
+
+Trust & Transparency: Implementation of data lineage and quality dashboards to provide a "single source of truth" that users can actually trust.
 
 ❄️ Cost Optimization (FinOps)
 Visibility: Attribution of costs by Team, Domain, Environment, and Workload using metadata & tags.
