@@ -66,6 +66,7 @@ Visualization: Advanced Analytics Dashboards (Cost & Performance tracking).
 **Key Pillars & Solutions**
 
 ❄️ Data Quality & Observability
+
 Data Integrity: Automated data quality checks and governance-ready metrics to ensure platform reliability
 
 Data Freshness: Monitoring SLA/SLOs for critical pipelines to ensure data is updated within expected timeframes (Target Lag).
@@ -73,11 +74,13 @@ Data Freshness: Monitoring SLA/SLOs for critical pipelines to ensure data is upd
 Trust & Transparency: Implementation of data lineage and quality dashboards to provide a "single source of truth" that users can actually trust.
 
 ❄️ Cost Optimization (FinOps)
+
 Visibility: Attribution of costs by Team, Domain, Environment, and Workload using metadata & tags.
 
 Waste Detection: Identification of oversized warehouses, unused resources, and "expensive" query patterns.
 
 ❄️ Data Governance & Security
+
 Access Control: Robust RBAC (Role-Based Access Control) hierarchy.
 
 Tagging Standards: Enforcing metadata standards.
@@ -85,6 +88,7 @@ Tagging Standards: Enforcing metadata standards.
 PII Management: Secure handling of sensitive data (masking/security policies).
 
 ❄️ Performance Tuning
+
 Query Efficiency: Monitoring and optimizing high-latency/high-cost queries (unused cache, data spilling, serverless features, etc..).
 
 Warehouse Sizing: Strategic management of compute resources to balance speed and credit consumption.
