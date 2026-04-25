@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_monitoring_freshness_gaps
+    description: "Monitor for data gaps in Snowflake Query History. Flags missing hours after a 3h <grace> period."
+    columns:
+      - name: check_hour
+        description: "The hourly timestamp being analyzed."
+        tests:
+          - unique
+          - not_null
+      - name: n_queries
+        description: "Number of queries recorded in this hour."
+      - name: status
+        description: "Status based on volume: HEALTHY (>=10), EXPECTED_LAG (low but recent), GAP_DETECTED (low and old)."
