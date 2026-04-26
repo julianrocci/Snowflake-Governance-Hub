@@ -93,6 +93,8 @@ Query Efficiency: Monitoring and optimizing high-latency/high-cost queries (unus
 
 Warehouse Sizing: Strategic management of compute resources to balance speed and credit consumption.
 
+Skew Mitigation: Identifying and resolving data distribution issues (Data Skew) during heavy joins by implementing salting techniques.
+
 ELT Reliability: Modern dbt-driven pipelines for clean, testable, and scalable data.
 
 **Decision-Ready Analytics**
