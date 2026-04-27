@@ -6,48 +6,78 @@ This project demonstrates a production-ready framework designed to govern, monit
 <summary>📁 View Project Structure </summary>
 
 ```
-cost_governance/                                          ← Git repo root
-├── dcm/                                                  ← IaC (DCM)
-│   ├── manifest.yml
-│   ├── sources/definitions/
-│   │   ├── infrastructure.sql                            (databases, schemas, warehouses)
-│   │   ├── access.sql                                    (roles, grants)
-│   │   ├── tables.sql                                    (config tables)
-│   │   └── tags.sql                                      (governance tags)
+Snowflake-Governance-Hub/                                 ← Git repo root
+├── dcm/                                                  ← IaC (DCM - Database Change Management)
+│   ├── manifest.yml                                      (DCM configuration)
+│   ├── sources/
+│   │   └── definitions/
+│   │       ├── infrastructure.sql                        (databases, schemas, warehouses)
+│   │       ├── access.sql                                (roles, grants, RBAC hierarchy)
+│   │       ├── tables.sql                                (config & metadata tables)
+│   │       └── tags.sql                                  (governance & cost allocation tags)
 │   └── scripts/
-│       ├── bootstrap_pre_deploy_DCM.sql                  (one-shot setup)
-│       ├── bootstrap_secondary_roles_post_deploy_DCM.sql
-│       └── post_deploy_DCM_future_grants.sql             (after each DCM deploy)
-├── dbt/                                                  ← Transformations (dbt)
+│       ├── bootstrap_pre_deploy_DCM.sql                  (one-shot setup, Streamlit deployment)
+│       ├── bootstrap_secondary_roles_post_deploy_DCM.sql (secondary role setup)
+│       └── post_deploy_DCM_future_grants.sql             (post-deploy future grants automation)
+│
+├── dbt/                                                  ← Transformations (dbt - Data Build Tool)
 │   ├── dbt_project.yml
 │   ├── profiles.yml
 │   ├── macros/
-│   │   └── domain_mapping.sql                            (domain/env resolution)
-│   └── models/
-│       ├── staging/
-│       │   ├── src_snowflake.yml                         (source definitions)
-│       │   ├── _stg__models.yml                          (tests)
-│       │   ├── stg_warehouse_metering.sql
-│       │   └── ...
-│       ├── intermediate/
-│       │   ├── cost/
-│       │   │   ├── int_warehouse_efficiency_summary.sql
-│       │   │   └── ...
-│       │   └── performance/
-│       │       ├── int_warehouse_spilling_performance.sql
-│       │       └── ...
-│       └── marts/
-│           ├── cost/
-│           │   ├── _cost__models.yml                      (tests)
-│           │   ├── fct_warehouse_efficiency.sql
-│           │   └── ...
-│           └── performance/
-│               ├── _performance__models.yml               (tests)
-│               ├── fct_warehouse_cache_performance.sql
-│               └── ...
-├── .github/workflows/                                     ← CI/CD (In Progress)
+│   │   └── domain_mapping.sql                            (domain & environment resolution logic)
+│   ├── models/
+│   │   ├── staging/
+│   │   │   ├── src_snowflake.yml                         (source definitions - Account_Usage, etc)
+│   │   │   ├── _stg__models.yml                          (staging model tests)
+│   │   │   ├── stg_warehouse_metering.sql
+│   │   │   └── ...
+│   │   ├── intermediate/
+│   │   │   ├── cost/
+│   │   │   │   ├── int_warehouse_efficiency_summary.sql
+│   │   │   │   └── ...
+│   │   │   ├── performance/
+│   │   │   │   ├── int_warehouse_cache_performance.sql
+│   │   │   │   └── ...
+│   │   │   └── quality/
+│   │   │       ├── _int_quality__models.yml               (intermediate model tests)
+│   │   │       ├── int_monitoring_freshness_gaps.sql
+│   │   │       └── ...
+│   │   └── marts/
+│   │       ├── cost/
+│   │       │   ├── _cost__models.yml                     (cost domain tests & specs)
+│   │       │   ├── fct_warehouse_efficiency.sql
+│   │       │   └── ...
+│   │       ├── performance/
+│   │       │   ├── _performance__models.yml              (performance domain tests & specs)
+│   │       │   ├── fct_warehouse_cache_performance.sql
+│   │       │   └── ...
+│   │       └── quality/
+│   │           ├── _quality__models.yml                  (quality domain tests & specs)
+│   │           ├── fct_snowflake_monitoring_freshness.sql
+│   │           └── ...
+│   └── tests/
+│       └── assert_no_critical_gaps.sql                   (custom test on freshness & gaps)
+│
+├── streamlit/                                             ← UI / Self-Service Apps
+│   └── user_grants_manager/
+│       ├── README.md
+│       └── app.py                                        (Streamlit in Snowflake app - User & Grants manager)
+│
+├── docs/                                                 ← Documentation & Reference
+│   ├── project_scope.md                                  (project objectives & pillars)
+│   ├── dbt_concepts_memo/
+│   │   └── primary_dbt_commands.md
+│   └── snowflake_concepts_memo/                          (Personals memo)
+│       ├── Account_Usage.md
+│       ├── Caching.md
+│       └── ...
+│
+├── .github/workflows/                                     ← CI/CD (GitHub Actions)
+│   ├── deploy-dev.yml
+│   └── ...
+│
 ├── .gitignore
-├── DELIVERY_LOG.md
+├── doc_delivery.md                                        (delivery process : DCM, dbt, bootstrap scripts..)
 └── README.md
   ```
 
