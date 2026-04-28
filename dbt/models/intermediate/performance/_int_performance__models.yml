@@ -1,0 +1,18 @@
+version: 2
+
+models:
+  - name: int_data_skew
+    description: "Identifies query performance bottlenecks due to uneven data distribution."
+    tests:
+      # Alert only, does not stop the pipeline
+      - dbt_utils.expression_is_true:
+          expression: "skew_status != 'CRITICAL_SKEW'"
+          severity: warn
+          name: warn_on_critical_data_skew
+    columns:
+      - name: query_id
+        tests:
+          - unique
+          - not_null
+      - name: skew_status
+        description: "Status based on partition processing speed: BALANCED, POTENTIAL_SKEW, or CRITICAL_SKEW."
