@@ -48,3 +48,12 @@ models:
       - name: domain
         tests:
           - not_null
+  - name: fct_data_skew_analysis
+    description: "Final table for performance auditing. Lists queries with processing bottlenecks."
+    columns:
+      - name: query_id
+        description: "Unique Snowflake Query ID."
+      - name: skew_status
+        description: "Level of data skew: POTENTIAL_SKEW or CRITICAL_SKEW."
+      - name: total_exec_seconds
+        description: "Duration of the query in seconds."
