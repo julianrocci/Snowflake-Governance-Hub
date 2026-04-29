@@ -2,14 +2,38 @@ version: 2
 
 models:
   - name: int_monitoring_freshness_gaps
-    description: "Monitor for data gaps in Snowflake Query History. Flags missing hours after a 3h <grace> period."
+    description: "Monitors data flow health by comparing an hourly spine against actual rows inserted."
     columns:
       - name: check_hour
-        description: "The hourly timestamp being analyzed."
+        description: "The hourly timestamp from the generated spine."
         tests:
           - unique
           - not_null
+      - name: total_rows_inserted
+        description: "Sum of rows inserted in this hour. Primary metric for volume monitoring."
       - name: n_queries
-        description: "Number of queries recorded in this hour."
+        description: "Number of queries executed. Used to detect 'Silent Failures'."
+      - name: minutes_ago
+        description: "Minutes elapsed since this hour started."
       - name: status
-        description: "Status based on volume: HEALTHY (>=10), EXPECTED_LAG (low but recent), GAP_DETECTED (low and old)."
+        description: "Quality status: HEALTHY (rows > 0), EXPECTED_LAG (<3h), GAP_DETECTED (>3h), or SILENT_FAILURE (queries but no rows)."
+        tests:
+          - accepted_values:
+              values: ['HEALTHY', 'EXPECTED_LAG', 'GAP_DETECTED', 'SILENT_FAILURE', 'UNKNOWN']
+
+  - name: int_automation_errors
+    description: "Captures failed queries from automated processes (Tasks, Pipes, DBT) in the last 30 days."
+    columns:
+      - name: query_id
+        tests:
+          - unique
+          - not_null
+      - name: automation_type
+        description: "Category of the automated process: TASK, INGESTION_PIPE, or TRANSFORMATION_JOB."
+        tests:
+          - accepted_values:
+              values: ['TASK', 'INGESTION_PIPE', 'TRANSFORMATION_JOB', 'UNKNOWN_AUTOMATION_OR_USER']
+      - name: execution_status
+        description: "The failure status (FAIL, ERROR, etc.)."
+      - name: error_message
+        description: "The error message from Snowflake to assist in debugging."
