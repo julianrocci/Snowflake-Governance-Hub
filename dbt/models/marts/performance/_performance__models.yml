@@ -17,7 +17,7 @@ models:
           - accepted_values:
               values: ['FINANCE', 'MARKETING', 'ECOMMERCE', 'RETAIL', 'ANALYTICS', 'LOYALTY', 'MANAGEMENT', 'DATA_ENG', 'OTHER']
 
-  - name: fct_serverless_autoclustering_mart
+  - name: rpt_serverless_autoclustering_mart
     description: "Monthly clustering costs by table and domain — identifies high-cost tables and serverless credit consumption"
     columns:
       - name: full_table_name
@@ -27,7 +27,7 @@ models:
         tests:
           - not_null
 
-  - name: fct_warehouse_cache_performance
+  - name: rpt_warehouse_cache_performance
     description: "Cache performance distribution per warehouse — result cache, local disk, remote storage ratios"
     columns:
       - name: warehouse_name
@@ -38,7 +38,7 @@ models:
         tests:
           - not_null
 
-  - name: fct_warehouse_spilling_summary
+  - name: rpt_warehouse_spilling_summary
     description: "Aggregated spilling metrics per warehouse — local and remote spilling ratios with severity classification"
     columns:
       - name: warehouse_name

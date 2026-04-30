@@ -2,7 +2,7 @@ version: 2
 
 models:
   # Main Efficiency Mart
-  - name: fct_warehouse_efficiency
+  - name: rpt_warehouse_efficiency
     description: "Final mart for warehouse efficiency and FinOps ROI. Provides a high-level view of wasted costs per warehouse."
     columns:
       - name: warehouse_name
@@ -24,7 +24,7 @@ models:
           - not_null
 
   # Detailed Behavior Mart
-  - name: fct_warehouse_behavior_analysis
+  - name: rpt_warehouse_behavior_analysis
     description: "Detailed mart for behavioral analysis. Tracks wakeups and isolated queries by user and date."
     columns:
       - name: warehouse_name
