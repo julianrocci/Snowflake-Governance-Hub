@@ -23,21 +23,25 @@ hours_spine AS (
 ),
 
 actual_data AS (
-    -- Aggregate real volume from staging
+    -- Aggregate real volume from staging, per table
     SELECT 
-        DATE_TRUNC('hour', start_time) AS event_hour,
+        DATE_TRUNC('hour', q.start_time) AS event_hour,
+        w.full_table_name,
         -- Summing the actual data volume
-        SUM(rows_inserted) AS total_rows_inserted,
-        COUNT(query_id) AS n_queries
-    FROM {{ ref('stg_query_history') }}
-    WHERE start_time >= (SELECT start_check FROM timerange)
-    GROUP BY event_hour
+        SUM(q.rows_inserted) AS total_rows_inserted,
+        COUNT(q.query_id) AS n_queries
+    FROM {{ ref('stg_query_history') }} q
+    INNER JOIN {{ ref('stg_access_history_writes') }} w
+        ON q.query_id = w.query_id
+    WHERE q.start_time >= (SELECT start_check FROM timerange)
+    GROUP BY event_hour, w.full_table_name
 ),
 
 joined AS (
     -- Confront spine with volume data
     SELECT
         h.check_hour,
+        d.full_table_name,
         COALESCE(d.total_rows_inserted, 0) AS total_rows_inserted,
         COALESCE(d.n_queries, 0) AS n_queries,
         TIMESTAMPDIFF('minute', h.check_hour, CURRENT_TIMESTAMP()) AS minutes_ago
@@ -48,6 +52,7 @@ joined AS (
 
 SELECT
     check_hour,
+    full_table_name,
     total_rows_inserted,
     n_queries,
     minutes_ago,

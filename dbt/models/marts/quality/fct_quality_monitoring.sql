@@ -14,6 +14,7 @@ WITH freshness_gaps AS (
         check_hour AS event_timestamp,
         'DATA_FLOW' AS category,
         status AS alert_level,
+        full_table_name,
         total_rows_inserted,
         n_queries,
         CASE 
@@ -23,6 +24,7 @@ WITH freshness_gaps AS (
         END AS event_description,
         NULL AS error_message
     FROM {{ ref('int_monitoring_freshness_gaps') }}
+    WHERE full_table_name IS NOT NULL
 ),
 
 automation_failures AS (
@@ -31,6 +33,7 @@ automation_failures AS (
         start_time AS event_timestamp,
         'TECHNICAL_ERROR' AS category,
         automation_type AS alert_level,
+        NULL AS full_table_name,
         NULL AS total_rows_inserted,
         1 AS n_queries,
         'Failed ' || automation_type || ': ' || SUBSTR(query_text, 1, 50) AS event_description,
@@ -48,6 +51,7 @@ SELECT
     event_timestamp,
     category,
     alert_level,
+    full_table_name,
     total_rows_inserted,
     n_queries,
     event_description,
