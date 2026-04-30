@@ -19,7 +19,7 @@ WITH failed_queries AS (
         start_time,
         end_time,
         total_elapsed_time / 1000 AS duration_seconds
-    FROM {{ ref('stg_snowflake_query_history') }}
+    FROM {{ ref('stg_query_history') }}
     WHERE start_time >= DATEADD('day', -30, CURRENT_TIMESTAMP())
       AND execution_status NOT IN ('SUCCESS', 'RUNNING')
 ),

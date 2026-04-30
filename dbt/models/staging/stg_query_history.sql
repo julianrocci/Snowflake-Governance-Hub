@@ -37,6 +37,14 @@ raw_query_history as (
         (bytes_spilled_to_local_storage / power(1024, 3)) as gb_spilled_local,
         (bytes_spilled_to_remote_storage / power(1024, 3)) as gb_spilled_remote,
         
+        -- Data volume metrics
+        rows_inserted,
+        partitions_scanned,
+        partitions_total,
+        execution_time,
+        error_code,
+        error_message,
+        
         -- More ms columns for deep analysis if needed
         compilation_time / 1000 as compilation_time_s,
         queued_overload_time / 1000 as queued_overload_time_s

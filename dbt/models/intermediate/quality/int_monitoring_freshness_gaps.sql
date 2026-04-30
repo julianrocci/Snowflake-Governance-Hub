@@ -29,7 +29,7 @@ actual_data AS (
         -- Summing the actual data volume
         SUM(rows_inserted) AS total_rows_inserted,
         COUNT(query_id) AS n_queries
-    FROM {{ ref('stg_snowflake_query_history') }}
+    FROM {{ ref('stg_query_history') }}
     WHERE start_time >= (SELECT start_check FROM timerange)
     GROUP BY event_hour
 ),
