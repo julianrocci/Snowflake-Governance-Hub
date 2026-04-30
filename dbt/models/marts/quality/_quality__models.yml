@@ -1,12 +1,12 @@
 version: 2
 
 models:
-  - name: fct_snowflake_monitoring_freshness
-    description: "Final fact table for Data Quality dashboards. Shows hourly pipeline health."
+  - name: fct_quality_monitoring
+    description: "Final fact table for Data Quality dashboards."
     columns:
-      - name: check_hour
-        description: "The hour being monitored."
-      - name: status
-        description: "Health status: HEALTHY, GAP_DETECTED, or EXPECTED_LAG."
-      - name: is_gap
-        description: "Numeric flag (1/0) to easily count failures in BI tools."
+      - name: event_timestamp
+        description: "Timestamp of the event."
+      - name: category
+        description: "Event category: DATA_FLOW or TECHNICAL_ERROR."
+      - name: is_alert
+        description: "Flag to easily count failures."
