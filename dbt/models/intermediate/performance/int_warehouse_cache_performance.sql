@@ -26,20 +26,12 @@ WITH base_metrics AS (
 flagged_queries AS (
     SELECT
         *,
-        CASE 
-            WHEN percentage_scanned_from_cache = 1 THEN 1
-            ELSE 0
-        END AS is_result_cache_hit,
-
         CASE
-            WHEN percentage_scanned_from_cache > 0.50 THEN 1
-            ELSE 0
-        END AS is_local_efficient,
-
-        CASE
-            WHEN percentage_scanned_from_cache < 0.10 AND total_bytes > 0 THEN 1
-            ELSE 0
-        END AS is_remote_heavy
+            WHEN percentage_scanned_from_cache = 1 THEN 'RESULT_CACHE'
+            WHEN percentage_scanned_from_cache > 0.50 THEN 'LOCAL_EFFICIENT'
+            WHEN percentage_scanned_from_cache < 0.10 AND total_bytes > 0 THEN 'REMOTE_HEAVY'
+            ELSE 'MIXED'
+        END AS cache_category
     FROM base_metrics
 )
 
