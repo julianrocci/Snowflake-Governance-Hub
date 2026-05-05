@@ -29,7 +29,7 @@ flagged_queries AS (
         CASE
             WHEN percentage_scanned_from_cache = 1 THEN 'RESULT_CACHE'
             WHEN percentage_scanned_from_cache > 0.50 THEN 'LOCAL_EFFICIENT'
-            WHEN percentage_scanned_from_cache < 0.10 AND total_bytes > 0 THEN 'REMOTE_HEAVY'
+            WHEN percentage_scanned_from_cache < 0.20 AND total_bytes > 0 THEN 'REMOTE_HEAVY'
             ELSE 'MIXED'
         END AS cache_category
     FROM base_metrics
