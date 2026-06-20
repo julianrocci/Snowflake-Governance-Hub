@@ -1,0 +1,21 @@
+version: 2
+
+sources:
+  - name: app_data_source
+    database: analytics
+    schema: dbt_jrocci
+    tables:
+      - name: raw_users
+        description: "Raw user signup data ingested from the production database."
+        columns:
+          - name: user_id
+            data_tests:
+              - unique
+              - not_null
+      - name: raw_transactions
+        description: "Raw transaction records capturing customer purchases."
+        columns:
+          - name: transaction_id
+            data_tests:
+              - unique
+              - not_null
