@@ -1,7 +1,31 @@
-**Focus : Data Quality | Cost Optimization | Performance Tuning**
+**Core Stack: Snowflake + dbt**
+**Focus: Analytics Engineering | Cost Optimization | Performance Tuning**
 
-This project demonstrates a production-ready framework designed to govern, monitor, and optimize your Snowflake environment. It shows the "hidden costs" problem by providing full transparency and actionable control over data operations. It also enforces automated quality standards and ensures security.
+This project demonstrates a production-ready framework designed to govern, monitor, and optimize a modern data stack. It bridges the gap between **Cloud Data Warehousing (Snowflake)** and **Modern Data Transformation Engineering (dbt)** to solve the "hidden costs" problem, enforce automated data quality, and build scalable analytics.
 
+## Key Implemented Features
+
+### GitOps Infrastructure & Governance
+* **DCM Infrastructure as Code:** Native automation of Snowflake environments via **Snowflake Database Change Management (DCM)** integrated with GitHubActions CI/CD.
+* **Streamlit Access Manager App:** Self-service app inside Snowflake for secure multi-user creation and bulk RBAC grant management, backed by a dedicated audit log table.
+
+### FinOps & Cost Optimization (dbt Core)
+* **Cross-Entity Credit Allocation:** Aggregates multi-warehouse metrics (Ecom, Marketing, Finance) to compute real execution-to-billing ratios and idle cost tracking.
+* **Warehouse Behavior Analyzer:** Minimizes compute waste by flagging idle gaps, frequent WH wakeups, and high-cost "isolated queries" (paying 60s of auto-suspend for 2s of execution).
+
+### Snowflake Performance Engineering (dbt Core)
+* **Multi-Layer Cache Profiling:** Maps queries served by Metadata/Result Cache vs. Local SSD to isolate warehouse cold-starts and identify remote storage bottlenecks.
+* **Query Spilling Tracker:** Automates detection of memory overflows by flagging queries with >30% local disk spill or >1% critical remote storage spilling.
+* **Data Skew & Partitioning Monitor:** Catches join bottlenecks by calculating execution speed per partition, highlighting critical distribution skewing (>0.5s/partition for >5min).
+* **Automatic Clustering Cost Control:** Tracks monthly credit and GB consumption of Snowflake’s auto-reclustering feature to flag tables with high maintenance costs.
+
+### Data Observability & Quality
+* **Metadata-Aware Freshness Engine:** A smart SLA tracker that accounts for Snowflake’s 3-hour data latency to correctly distinguish real data gaps from silent loading failures.
+
+### Core Business Modeling (dbt Core)
+* **User Cohort Retention Framework:** Analytics pipeline processing active vs. non-paying user lifecycles to extract retention insights.
+
+---
 <details>
 <summary>📁 View Project Structure </summary>
 
