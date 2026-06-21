@@ -1,4 +1,5 @@
 **Core Stack: Snowflake + dbt**
+
 **Focus: Analytics Engineering | Cost Optimization | Performance Tuning**
 
 This project demonstrates a production-ready framework designed to govern, monitor, and optimize a modern data stack. It bridges the gap between **Cloud Data Warehousing (Snowflake)** and **Modern Data Transformation Engineering (dbt)** to solve the "hidden costs" problem, enforce automated data quality, and build scalable analytics.
