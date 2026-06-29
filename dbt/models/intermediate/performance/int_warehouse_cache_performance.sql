@@ -4,9 +4,6 @@
    - Local Disk: > 50% of total bytes scanned.
    - Remote Disk: > 50% of total bytes scanned.
 */
-{{ config(
-    materialized='ephemeral'
-) }}
 
 WITH base_metrics AS (
     SELECT

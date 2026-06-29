@@ -3,10 +3,6 @@
    Aggregated by day to allow both daily trend analysis and monthly rollups in Marts.
 */
 
-{{ config(
-    materialized='ephemeral'
-) }}
-
 WITH base_clustering AS (
     SELECT
         -- Identifying the table precisely

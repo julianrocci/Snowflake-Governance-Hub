@@ -1,12 +1,6 @@
 /* Intermediate: Global 30-day efficiency per warehouse (Compute Only).
    Aggregates compute credits to measure warehouse optimization. */
 
-
-{{ config(
-    materialized='ephemeral'
-) }}
-
-
 WITH global_billing AS (
     SELECT
         warehouse_name,

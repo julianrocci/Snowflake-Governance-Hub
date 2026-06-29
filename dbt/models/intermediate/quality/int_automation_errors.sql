@@ -3,10 +3,6 @@
     Focus: Identifies failed executions from automated processes in the last 30 days.
 */
 
-{{ config(
-    materialized='view'
-) }}
-
 WITH failed_queries AS (
     SELECT
         query_id,

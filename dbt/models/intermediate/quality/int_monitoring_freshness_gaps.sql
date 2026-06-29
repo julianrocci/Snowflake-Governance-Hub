@@ -4,10 +4,6 @@
     to detect periods where no data was actually loaded.
 */
 
-{{ config(
-    materialized='view'
-) }}
-
 WITH timerange AS (
     -- Define the 24-hour rolling window
     SELECT 

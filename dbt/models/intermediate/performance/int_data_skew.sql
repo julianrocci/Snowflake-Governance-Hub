@@ -4,10 +4,6 @@
     Identifies queries where a few workers are overloaded compared to the average.
 */
 
-{{ config(
-    materialized='view'
-) }}
-
 WITH compute_metrics AS (
     -- Gather base metrics for the last month
     SELECT

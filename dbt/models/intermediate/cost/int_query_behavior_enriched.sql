@@ -1,10 +1,6 @@
 /* Intermediate: Behavioral analysis of warehouse activity. 
    Identifies wakeups, idle gaps, and isolated queries. */
 
-{{ config(
-    materialized='ephemeral'
-) }}
-
 WITH base_queries AS (
     SELECT
         query_id,

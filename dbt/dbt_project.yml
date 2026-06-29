@@ -20,7 +20,7 @@ vars:
 models:
   cost_governance_dbt:
     staging:
-      +materialized: view
+      +materialized: "{{ 'view' if target.name == 'dev' else 'ephemeral' }}"
     intermediate:
       +materialized: ephemeral
     marts:

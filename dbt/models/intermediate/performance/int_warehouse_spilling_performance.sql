@@ -3,10 +3,6 @@
    Includes query identity for Top 10 deep-dives.
 */
 
-{{ config(
-    materialized='ephemeral'
-) }}
-
 WITH base_metrics AS (
     SELECT
         query_id,
