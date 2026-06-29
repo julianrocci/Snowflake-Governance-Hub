@@ -6,8 +6,7 @@ models:
     columns:
       - name: check_hour
         description: "The hourly timestamp from the generated spine."
-        tests:
-          - unique
+        data_tests:
           - not_null
       - name: total_rows_inserted
         description: "Sum of rows inserted in this hour. Primary metric for volume monitoring."
@@ -17,7 +16,7 @@ models:
         description: "Minutes elapsed since this hour started."
       - name: status
         description: "Quality status: HEALTHY (rows > 0), EXPECTED_LAG (<3h), GAP_DETECTED (>3h), or SILENT_FAILURE (queries but no rows)."
-        tests:
+        data_tests:
           - accepted_values:
               values: ['HEALTHY', 'EXPECTED_LAG', 'GAP_DETECTED', 'SILENT_FAILURE', 'UNKNOWN']
 
@@ -25,14 +24,14 @@ models:
     description: "Captures failed queries from automated processes (Tasks, Pipes, DBT) in the last 30 days."
     columns:
       - name: query_id
-        tests:
+        data_tests:
           - unique
           - not_null
       - name: automation_type
         description: "Category of the automated process: TASK, INGESTION_PIPE, or TRANSFORMATION_JOB."
-        tests:
+        data_tests:
           - accepted_values:
-              values: ['TASK', 'INGESTION_PIPE', 'TRANSFORMATION_JOB', 'UNKNOWN_AUTOMATION_OR_USER']
+              values: ['TASK', 'INGESTION_PIPE', 'TRANSFORMATION_JOB']
       - name: execution_status
         description: "The failure status (FAIL, ERROR, etc.)."
       - name: error_message

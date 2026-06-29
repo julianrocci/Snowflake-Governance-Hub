@@ -4,15 +4,23 @@ models:
   - name: int_data_skew
     description: "Identifies query performance bottlenecks due to uneven data distribution."
     tests:
-      # Alert only, does not stop the pipeline
       - dbt_utils.expression_is_true:
           expression: "skew_status != 'CRITICAL_SKEW'"
           severity: warn
           name: warn_on_critical_data_skew
     columns:
       - name: query_id
-        tests:
+        data_tests:
           - unique
           - not_null
       - name: skew_status
         description: "Status based on partition processing speed: BALANCED, POTENTIAL_SKEW, or CRITICAL_SKEW."
+
+  - name: int_serverless_autoclustering_performance
+    description: "Daily aggregation of auto-clustering credits and volumes per table"
+
+  - name: int_warehouse_cache_performance
+    description: "Classifies queries by cache usage pattern (result cache, local, remote)"
+
+  - name: int_warehouse_spilling_performance
+    description: "Flags queries exceeding local (>30%) or remote (>1%) spilling thresholds"
