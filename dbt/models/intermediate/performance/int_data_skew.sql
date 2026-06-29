@@ -20,8 +20,7 @@ WITH compute_metrics AS (
         partitions_scanned,
         start_time
     FROM {{ ref('stg_snowflake_usage__query_history') }}
-    WHERE start_time >= DATEADD('month', -1, CURRENT_TIMESTAMP())
-      AND execution_time > 0
+    WHERE execution_time > 0
       AND partitions_scanned > 50 -- Ignore very small metadata queries
 ),
 
