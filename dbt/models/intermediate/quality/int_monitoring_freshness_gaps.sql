@@ -30,8 +30,8 @@ actual_data AS (
         -- Summing the actual data volume
         SUM(q.rows_inserted) AS total_rows_inserted,
         COUNT(q.query_id) AS n_queries
-    FROM {{ ref('stg_query_history') }} q
-    INNER JOIN {{ ref('stg_access_history_writes') }} w
+    FROM {{ ref('stg_snowflake_usage__query_history') }} q
+    INNER JOIN {{ ref('stg_snowflake_usage__access_history_writes') }} w
         ON q.query_id = w.query_id
     WHERE q.start_time >= (SELECT start_check FROM timerange)
     GROUP BY event_hour, w.full_table_name

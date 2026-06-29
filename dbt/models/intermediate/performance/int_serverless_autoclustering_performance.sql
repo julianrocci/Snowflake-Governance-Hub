@@ -19,7 +19,7 @@ WITH base_clustering AS (
         DATE_TRUNC('month', start_time) AS event_month,
         credits_used,
         num_bytes_reclustered
-    FROM {{ ref('stg_autoclustering_history') }}
+    FROM {{ ref('stg_snowflake_usage__autoclustering_history') }}
 ),
 
 daily_aggregation AS (

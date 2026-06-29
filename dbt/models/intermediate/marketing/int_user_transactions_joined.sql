@@ -1,9 +1,9 @@
 with users as (
-    select * from {{ ref('stg_users') }}
+    select * from {{ ref('stg_app_data__users') }}
 ),
 
 transactions as (
-    select * from {{ ref('stg_transactions') }}
+    select * from {{ ref('stg_app_data__transactions') }}
 ),
 
 joined as (

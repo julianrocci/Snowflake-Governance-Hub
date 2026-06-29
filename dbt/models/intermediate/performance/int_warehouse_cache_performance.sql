@@ -18,7 +18,7 @@ WITH base_metrics AS (
         total_bytes_scanned AS total_bytes,
         (total_bytes_scanned * percentage_scanned_from_cache) AS bytes_from_cache,
         (total_bytes_scanned * (1 - percentage_scanned_from_cache)) AS bytes_from_remote
-    FROM {{ ref('stg_query_history') }}
+    FROM {{ ref('stg_snowflake_usage__query_history') }}
     WHERE start_time >= DATEADD('day', -30, CURRENT_TIMESTAMP())
       AND warehouse_size IS NOT NULL
 ),

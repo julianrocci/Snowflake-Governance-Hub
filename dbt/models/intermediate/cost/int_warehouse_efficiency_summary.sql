@@ -14,7 +14,7 @@ WITH global_billing AS (
         SUM(credits_used_compute) AS total_compute_credits,
         -- Total billed time: 1 compute credit = 3600 seconds of an X-Small WH
         SUM(credits_used_compute) * 3600 AS total_billed_seconds
-    FROM {{ ref('stg_warehouse_metering') }}
+    FROM {{ ref('stg_snowflake_usage__warehouse_metering') }}
     GROUP BY warehouse_name
 ),
 
@@ -23,7 +23,7 @@ global_execution AS (
         warehouse_name,
         SUM(execution_time_seconds) AS total_work_seconds,
         COUNT(query_id) AS total_queries_executed
-    FROM {{ ref('stg_query_history') }}
+    FROM {{ ref('stg_snowflake_usage__query_history') }}
     GROUP BY warehouse_name
 )
 

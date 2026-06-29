@@ -19,7 +19,7 @@ WITH base_metrics AS (
         bytes_spilled_to_local_storage AS bytes_local,
         bytes_spilled_to_remote_storage AS bytes_remote,
         total_bytes_scanned AS total_bytes
-    FROM {{ ref('stg_query_history') }}
+    FROM {{ ref('stg_snowflake_usage__query_history') }}
     WHERE start_time >= DATEADD('day', -30, CURRENT_TIMESTAMP())
       AND warehouse_size IS NOT NULL
 )

@@ -14,7 +14,7 @@ WITH base_queries AS (
         start_time,
         end_time,
         execution_time_seconds
-    FROM {{ ref('stg_query_history') }}
+    FROM {{ ref('stg_snowflake_usage__query_history') }}
 ),
 
 sequenced_queries AS (
