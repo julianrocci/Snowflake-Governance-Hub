@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_user_transactions_joined
+    description: "Joins users with their transactions, calculates cohort month and months since signup"
+    columns:
+      - name: transaction_id
+        data_tests:
+          - unique
+          - not_null
+      - name: user_id
+        data_tests:
+          - not_null
+      - name: month_number
+        description: "Number of months between signup and purchase"

@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: int_query_behavior_enriched
+    description: "Enriches queries with idle gaps, wakeup flags, and isolated query detection per warehouse"
+    columns:
+      - name: query_id
+        data_tests:
+          - not_null
+      - name: warehouse_name
+        data_tests:
+          - not_null
+
+  - name: int_warehouse_efficiency_summary
+    description: "Aggregates compute credits vs actual work time per warehouse over 30 days"
+    columns:
+      - name: warehouse_name
+        data_tests:
+          - unique
+          - not_null
