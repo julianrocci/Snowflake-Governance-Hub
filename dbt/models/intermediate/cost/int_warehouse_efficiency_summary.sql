@@ -36,7 +36,7 @@ SELECT
     NVL(e.total_work_seconds, 0) AS total_work_seconds,
     NVL(e.total_queries_executed, 0) AS total_queries_executed,
     -- Effective compute cost (USD)
-    (b.total_compute_credits * 4.0) AS total_compute_cost_usd
+    (b.total_compute_credits * {{ var('credit_price_usd') }}) AS total_compute_cost_usd
 FROM global_billing b
 LEFT JOIN global_execution e
     ON b.warehouse_name = e.warehouse_name
