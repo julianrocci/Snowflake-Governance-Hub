@@ -22,10 +22,7 @@ final as (
         -- All credit consumption
         credits_used,
         credits_used_compute,
-        credits_used_cloud_services,
-        
-        -- Credit price (standard for example)
-        4.0 as credit_price_usd
+        credits_used_cloud_services
     from raw_metering
 )
 
