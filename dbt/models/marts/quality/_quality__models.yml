@@ -2,11 +2,19 @@ version: 2
 
 models:
   - name: fct_quality_monitoring
-    description: "Final fact table for Data Quality dashboards."
+    description: "Unified data quality monitoring combining freshness gaps and technical failures"
     columns:
       - name: event_timestamp
-        description: "Timestamp of the event."
+        data_tests:
+          - not_null
       - name: category
-        description: "Event category: DATA_FLOW or TECHNICAL_ERROR."
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: ['DATA_FLOW', 'TECHNICAL_ERROR']
       - name: is_alert
-        description: "Flag to easily count failures."
+        description: "1 if the event requires attention, 0 if healthy"
+        data_tests:
+          - not_null
+          - accepted_values:
+              values: [0, 1]
