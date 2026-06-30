@@ -16,12 +16,12 @@ clean-targets:
 vars:
   credit_price_usd: 4.00
 
-# No +database and +schema as dbt will use it from profiles.yml
 models:
   cost_governance_dbt:
     staging:
-      +materialized: "{{ 'view' if target.name == 'dev' else 'ephemeral' }}"
+      +materialized: view
     intermediate:
-      +materialized: ephemeral
+      +materialized: "{{ 'view' if target.name == 'dev' else 'ephemeral' }}"
     marts:
       +materialized: table
+      +tags: ['daily']
