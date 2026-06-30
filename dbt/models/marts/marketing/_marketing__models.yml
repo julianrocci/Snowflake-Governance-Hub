@@ -1,7 +1,7 @@
 version: 2
 
 models:
-  - name: fct_cohort_retention
+  - name: rpt_cohort_retention
     description: "Cohort retention analysis with retention rate and revenue per cohort/month"
     columns:
       - name: cohort_month
