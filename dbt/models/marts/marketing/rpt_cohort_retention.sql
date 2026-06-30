@@ -7,7 +7,7 @@ cohort_sizes as (
     select
         date_trunc('month', signup_date) as cohort_month,
         count(distinct user_id) as total_cohort_users
-    from {{ ref('stg_app_data__users') }}
+    from {{ ref('stg_app_data__users').render() }}
     group by 1
 ),
 

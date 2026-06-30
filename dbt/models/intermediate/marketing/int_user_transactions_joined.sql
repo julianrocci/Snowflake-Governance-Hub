@@ -3,7 +3,7 @@ with users as (
 ),
 
 transactions as (
-    select * from {{ ref('stg_app_data__transactions') }}
+    select * from {{ ref('stg_app_data__transactions').render() }}
 ),
 
 joined as (
