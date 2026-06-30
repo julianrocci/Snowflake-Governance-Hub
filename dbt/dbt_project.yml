@@ -20,8 +20,14 @@ models:
   cost_governance_dbt:
     staging:
       +materialized: view
+      +grants:
+        select: ['ROLE_DATA_ENG']
     intermediate:
       +materialized: "{{ 'view' if target.name == 'dev' else 'ephemeral' }}"
+      +grants:
+        select: ['ROLE_DATA_ENG']
     marts:
       +materialized: table
       +tags: ['daily']
+      +grants:
+        select: ['ROLE_DATA_ENG', 'ROLE_ANALYST', 'ROLE_REPORTING']
