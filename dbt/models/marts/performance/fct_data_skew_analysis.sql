@@ -23,4 +23,3 @@ SELECT
 FROM {{ ref('int_data_skew') }}
 -- We only keep queries that require attention
 WHERE skew_status IN ('POTENTIAL_SKEW', 'CRITICAL_SKEW')
-ORDER BY total_exec_seconds DESC

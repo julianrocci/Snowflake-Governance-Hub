@@ -35,4 +35,3 @@ SELECT
     *,
     {{ get_domain_from_database('database_name') }} AS domain
 FROM monthly_table_aggregation
-ORDER BY event_month DESC, total_monthly_credits DESC

@@ -63,4 +63,3 @@ SELECT
     END AS is_alert,
     CURRENT_TIMESTAMP() AS dbt_updated_at
 FROM unioned
-ORDER BY event_timestamp DESC

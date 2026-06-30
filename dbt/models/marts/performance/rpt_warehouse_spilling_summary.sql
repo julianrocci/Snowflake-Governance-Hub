@@ -38,4 +38,3 @@ SELECT
     *,
     {{ get_domain_from_warehouse('warehouse_name') }} AS domain
 FROM warehouse_aggregation
-ORDER BY domain, pct_critical_remote_spilling DESC
