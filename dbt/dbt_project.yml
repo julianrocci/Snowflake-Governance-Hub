@@ -24,7 +24,4 @@ models:
     intermediate:
       +materialized: ephemeral
     marts:
-      cost:
-        +materialized: table
-      performance:
-        +materialized: table
+      +materialized: table
