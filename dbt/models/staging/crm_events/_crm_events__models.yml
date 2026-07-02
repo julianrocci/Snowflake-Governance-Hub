@@ -1,0 +1,20 @@
+version: 2
+
+models:
+  - name: stg_crm_events__customer_events
+    description: "Staged customer lifecycle events from external S3 source, refreshed before each run"
+    columns:
+      - name: event_id
+        data_tests:
+          - unique
+          - not_null
+      - name: customer_id
+        data_tests:
+          - not_null
+      - name: event_type
+        data_tests:
+          - accepted_values:
+              values: ['signup', 'purchase', 'upgrade', 'downgrade', 'churn', 'reactivation']
+      - name: event_timestamp
+        data_tests:
+          - not_null

@@ -1,0 +1,18 @@
+version: 2
+
+sources:
+  - name: crm_events
+    database: ANALYTICS
+    schema: RAW
+    description: "External tables reading Parquet files from S3 bucket (CRM event stream)"
+
+    tables:
+      - name: ext_customer_events
+        description: "Customer lifecycle events (signup, purchase, churn) pushed hourly to S3"
+        external:
+          location: "@ANALYTICS.RAW.CRM_S3_STAGE"
+          file_format: "ANALYTICS.RAW.PARQUET_FORMAT"
+        loaded_at_field: event_timestamp
+        freshness:
+          warn_after: {count: 2, period: hour}
+          error_after: {count: 6, period: hour}
