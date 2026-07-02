@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: stg_app_data__users
+    description: "Cleaned user signup data with standardized date and country columns"
+    columns:
+      - name: user_id
+        data_tests:
+          - unique
+          - not_null
+      - name: signup_date
+        data_tests:
+          - not_null
+
+  - name: stg_app_data__transactions
+    description: "Cleaned transaction records with typed dates and renamed amount column"
+    columns:
+      - name: transaction_id
+        data_tests:
+          - unique
+          - not_null
+      - name: user_id
+        data_tests:
+          - not_null
