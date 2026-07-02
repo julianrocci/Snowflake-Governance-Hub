@@ -1,7 +1,7 @@
-user_id,signup_date,country
-101,2026-01-10,CH
-102,2026-01-15,FR
-103,2026-01-20,CH
-104,2026-02-05,DE
-105,2026-02-12,CH
-106,2026-03-01,FR
+user_id,signup_date,country,plan,status
+101,2026-01-10,CH,premium,active
+102,2026-01-15,FR,basic,active
+103,2026-01-20,CH,premium,active
+104,2026-02-05,DE,basic,active
+105,2026-02-12,CH,standard,active
+106,2026-03-01,FR,premium,churned

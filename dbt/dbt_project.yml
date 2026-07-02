@@ -4,6 +4,7 @@ version: '1.0.0'
 profile: 'default'
 
 model-paths: ["models"]
+snapshot-paths: ["snapshots"]
 seed-paths: ["seeds"]
 test-paths: ["tests"]
 macro-paths: ["macros"]
@@ -30,4 +31,4 @@ models:
       +materialized: table
       +tags: ['daily']
       +grants:
-        select: ['ROLE_DATA_ENG', 'ROLE_ANALYST', 'ROLE_REPORTING']
+        select: "{{ ['ROLE_DATA_ENG', 'ROLE_ANALYST', 'ROLE_REPORTING'] if target.name == 'prod' else ['ROLE_DATA_ENG'] }}"
