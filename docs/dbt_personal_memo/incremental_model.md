@@ -28,9 +28,12 @@ If your sources can send you an updated_at field, you can add an ingested_at col
     -- The post_hook runs AFTER the merge, but uses the last_ingested_at captured BEFORE the merge
     post_hook = [
       "DELETE FROM {{ this }} WHERE customer_id IN (
-          SELECT customer_id FROM {{ ref('landing_customers') }} WHERE _fivetran_deleted = TRUE
+          SELECT customer_id FROM {{ ref('landing_customers') }}
             -- Clean up only the hard deletes that arrived in the current batch
             AND ingested_at > '{{ last_ingested_at }}'
+            -- Delete only if the most recent row is a delete
+            QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY _fivetran_synced DESC) = 1
+            AND _fivetran_deleted = TRUE
       )"
     ]
   )
@@ -54,10 +57,13 @@ SELECT
 FROM {{ ref('landing_customers') }}
 
 WHERE 
-  -- Exclude soft-deleted records from the main merge payload so they don't overwrite active rows
-  NOT _fivetran_deleted 
-
   -- Filter for the incremental delta using our frozen timestamp variable (works for both incremental and full refresh)
-  AND ingested_at > '{{ last_ingested_at }}'
+  ingested_at > '{{ last_ingested_at }}'
+
+  -- Handles multiples rows by customer_id within the same batch ( takes the most recent row )
+  QUALIFY ROW_NUMBER() OVER (PARTITION BY customer_id ORDER BY _fivetran_synced DESC) = 1
+
+  -- Exclude deleted records (handled by the post hook)
+  AND NOT _fivetran_deleted 
 ----------------------
-This model process perfectly only the delta and also handles late arriving data perfectly
+This model process perfectly only the delta and also handles late arriving data perfectly and deletes
