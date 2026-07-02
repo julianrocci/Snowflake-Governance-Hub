@@ -5,25 +5,29 @@ sources:
     database: SNOWFLAKE
     schema: ACCOUNT_USAGE
     loader: snowflake_shares
-    description: "Raw usage and metadata from Snowflake database"
-    
+    description: "Raw usage and metadata from Snowflake's shared ACCOUNT_USAGE views"
+
+    freshness:
+      warn_after: {count: 24, period: hour}
+      error_after: {count: 48, period: hour}
+
     tables:
       - name: query_history
         description: "Execution logs for all queries in the last 365 days"
-        tests:
-          - unique:
-              column_name: query_id
-          - not_null:
-              column_name: query_id
+        loaded_at_field: start_time
 
       - name: warehouse_metering_history
         description: "Hourly credit consumption for each warehouse"
+        loaded_at_field: start_time
 
       - name: login_history
         description: "History of user logins and authentication results"
+        loaded_at_field: event_timestamp
 
       - name: access_history
         description: "Tracks which users accessed which columns/tables"
+        loaded_at_field: query_start_time
 
       - name: automatic_clustering_history
         description: "Credits consumed by automatic reclustering operations"
+        loaded_at_field: start_time
